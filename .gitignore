@@ -1,0 +1,62 @@
+﻿# =========================
+# .NET / Visual Studio
+# =========================
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# =========================
+# Build / Publish
+# =========================
+[Bb]uild/
+[Bb]uilds/
+[Pp]ublish/
+[Pp]ublished/
+
+# =========================
+# Logs
+# =========================
+Logs/
+*.log
+
+# =========================
+# Configuration
+# =========================
+appsettings.Development.json
+appsettings.Production.json
+appsettings.Staging.json
+
+# =========================
+# Secrets
+# =========================
+secrets.json
+*.pfx
+*.key
+
+# =========================
+# Rider / VS Code
+# =========================
+.idea/
+.vscode/
+*.code-workspace
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Test results
+# =========================
+TestResults/
+
+# =========================
+# EF Core
+# =========================
+Migrations/*.Designer.cs
+Migrations/*.cs~
