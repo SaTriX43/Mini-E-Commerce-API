@@ -59,5 +59,47 @@ namespace Mini_E_Commerce_API.Controllers
                 valor = productoCreado.Value
             });
         }
+
+        [Authorize]
+        [HttpGet("obtener/{productoId}")]
+        public async Task<IActionResult> ObtenerProductoPorId(int productoId)
+        {
+            if(productoId <= 0)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "Su productoId debe de ser un numero"
+                });
+            }
+
+            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "Su usuarioId debe de ser un numero"
+                });
+            }
+
+            var producto = await _productoService.ObtenerProductoPorIdAsdync(usuarioId, productoId);
+
+            if(!producto.IsSuccess)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = producto.Error
+                });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                valor = producto.Value
+            });
+        }
     }
 }

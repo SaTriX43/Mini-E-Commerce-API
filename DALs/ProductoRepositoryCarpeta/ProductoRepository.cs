@@ -26,5 +26,12 @@ namespace Mini_E_Commerce_API.DALs.ProductoRepositoryCarpeta
                 p.IsActive
             );
         }
+
+
+        public async Task<Producto?> ObtenerProductoPorIdAsync(int productoId)
+        {
+            var productoEncontrado = await _context.Productos.FirstOrDefaultAsync(p => p.Id == productoId);
+            return productoEncontrado;
+        }
     }
 }

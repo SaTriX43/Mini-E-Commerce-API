@@ -95,5 +95,37 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
 
             return Result<ProductoDto>.Success( productoDto );
         }
+
+        public async Task<Result<ProductoDto>> ObtenerProductoPorIdAsdync(int usuarioId, int productoId)
+        {
+            var usuarioExise = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
+
+            if(usuarioExise == null)
+            {
+                return Result<ProductoDto>.Failure($"Su usuario con id = {usuarioId} no existe");
+            }
+
+            var productoExiste = await _productoRepository.ObtenerProductoPorIdAsync(productoId);
+            
+            if(productoExiste == null)
+            {
+                return Result<ProductoDto>.Failure($"Su producto con id = {productoId} no existe");
+            }
+
+            var productoDto = new ProductoDto
+            {
+                Id = productoExiste.Id,
+                CategoryId = productoExiste.CategoryId,
+                Description = productoExiste.Description,
+                Name = productoExiste.Name,
+                IsActive = productoExiste.IsActive,
+                CreatedAt = productoExiste.CreatedAt,
+                Price = productoExiste.Price,
+                Stock = productoExiste.Stock,
+                UpdatedAt = productoExiste.UpdatedAt,
+            };
+
+            return Result<ProductoDto>.Success(productoDto);
+        }
     }
 }
