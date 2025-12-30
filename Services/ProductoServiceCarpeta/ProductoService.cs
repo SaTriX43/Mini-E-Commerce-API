@@ -96,7 +96,7 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             return Result<ProductoDto>.Success( productoDto );
         }
 
-        public async Task<Result<ProductoDto>> ObtenerProductoPorIdAsdync(int usuarioId, int productoId)
+        public async Task<Result<ProductoDto>> ObtenerProductoPorIdAsync(int usuarioId, int productoId)
         {
             var usuarioExise = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
 
@@ -126,6 +126,32 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             };
 
             return Result<ProductoDto>.Success(productoDto);
+        }
+        public async Task<Result<List<ProductoDto>>> ObtenerProductosAsync(int usuarioId)
+        {
+            var usuarioExise = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
+
+            if (usuarioExise == null)
+            {
+                return Result<List<ProductoDto>>.Failure($"Su usuario con id = {usuarioId} no existe");
+            }
+
+            var productos = await _productoRepository.ObtenerProductosAsync();
+
+            var productosDtos = productos.Select(p => new ProductoDto
+            {
+                Id = p.Id,
+                CategoryId = p.CategoryId,
+                CreatedAt = p.CreatedAt,
+                Price = p.Price,
+                Description = p.Description,
+                Name = p.Name,
+                IsActive = p.IsActive,
+                Stock = p.Stock,
+                UpdatedAt = p.UpdatedAt,
+            }).ToList();
+
+            return Result<List<ProductoDto>>.Success(productosDtos);
         }
     }
 }

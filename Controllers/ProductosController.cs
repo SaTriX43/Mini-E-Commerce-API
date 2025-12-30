@@ -84,7 +84,7 @@ namespace Mini_E_Commerce_API.Controllers
                 });
             }
 
-            var producto = await _productoService.ObtenerProductoPorIdAsdync(usuarioId, productoId);
+            var producto = await _productoService.ObtenerProductoPorIdAsync(usuarioId, productoId);
 
             if(!producto.IsSuccess)
             {
@@ -99,6 +99,39 @@ namespace Mini_E_Commerce_API.Controllers
             {
                 success = true,
                 valor = producto.Value
+            });
+        }
+
+        [Authorize]
+        [HttpGet("obtener")]
+        public async Task<IActionResult> ObtenerProductos()
+        {
+            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "Su usuarioId debe de ser un numero"
+                });
+            }
+
+            var productos = await _productoService.ObtenerProductosAsync(usuarioId);
+
+            if (!productos.IsSuccess)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = productos.Error
+                });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                valor = productos.Value
             });
         }
     }

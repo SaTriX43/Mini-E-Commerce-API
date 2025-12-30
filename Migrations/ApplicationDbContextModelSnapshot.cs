@@ -189,7 +189,7 @@ namespace Mini_E_Commerce_API.Migrations
                     b.Property<int>("Stock")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("UpdatedAt")
+                    b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
