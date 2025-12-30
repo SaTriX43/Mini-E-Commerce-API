@@ -11,6 +11,8 @@ namespace Mini_E_Commerce_API.DTOs.ProductoDtoCarpeta
         [Required]
         public decimal Price { get; set; }
         [Required]
+        public int Stock {  get; set; }
+        [Required]
         public int CategoryId { get; set; }
     }
 }

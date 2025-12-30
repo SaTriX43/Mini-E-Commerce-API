@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Mini_E_Commerce_API.Models;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Mini_E_Commerce_API.DALs.ProductoRepositoryCarpeta
 {
@@ -16,10 +17,14 @@ namespace Mini_E_Commerce_API.DALs.ProductoRepositoryCarpeta
             await _context.SaveChangesAsync();
             return producto;
         }
-        public async Task<Producto?> ObtenerProductoPorNombre(string productoNombre)
+        public async Task<bool> ExisteProductoConNombreEnCategoriaAsync(string productoNombre, int categoriaId)
         {
-            var productoEncontrado = await _context.Productos.FirstOrDefaultAsync(p => p.Name == productoNombre);
-            return productoEncontrado;
+
+            return await _context.Productos.AnyAsync(p =>
+                p.Name == productoNombre &&
+                p.CategoryId == categoriaId &&
+                p.IsActive
+            );
         }
     }
 }
