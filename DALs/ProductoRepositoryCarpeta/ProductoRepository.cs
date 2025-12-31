@@ -36,5 +36,10 @@ namespace Mini_E_Commerce_API.DALs.ProductoRepositoryCarpeta
             var productos = await _context.Productos.ToListAsync();
             return productos;
         }
+
+        public async Task GuardarCambiosAsync()
+        {
+            await _context.SaveChangesAsync();
+        }
     }
 }

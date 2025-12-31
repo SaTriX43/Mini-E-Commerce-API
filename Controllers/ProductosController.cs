@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Mini_E_Commerce_API.DTOs.ProductoDtoCarpeta;
+using Mini_E_Commerce_API.Models.Enums;
 using Mini_E_Commerce_API.Services.ProductoServiceCarpeta;
 using System.Security.Claims;
 
@@ -133,6 +134,62 @@ namespace Mini_E_Commerce_API.Controllers
                 success = true,
                 valor = productos.Value
             });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPatch("incrementar-stock/{productoId}")]
+        public async Task<IActionResult> IncrementarStockProducto([FromBody] StockDto stock, int productoId)
+        {
+            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "Su usuarioId debe de ser un numero"
+                });
+            }
+
+            var resultadoIncrementar = await _productoService.OpearacionStockProductoAsync(usuarioId, productoId,TipoDeMovimiento.Incrementar,stock.Cantidad);
+
+            if (!resultadoIncrementar.IsSuccess) {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = resultadoIncrementar.Error
+                });
+            }
+
+            return NoContent();
+        }
+
+
+        [Authorize(Roles = "Admin")]
+        [HttpPatch("disminuir-stock/{productoId}")]
+        public async Task<IActionResult> DisminuirStockProducto([FromBody] StockDto stock, int productoId)
+        {
+            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "Su usuarioId debe de ser un numero"
+                });
+            }
+
+            var resultadoIncrementar = await _productoService.OpearacionStockProductoAsync(usuarioId, productoId, TipoDeMovimiento.Disminuir, stock.Cantidad);
+
+            if (!resultadoIncrementar.IsSuccess)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = resultadoIncrementar.Error
+                });
+            }
+
+            return NoContent();
         }
     }
 }
