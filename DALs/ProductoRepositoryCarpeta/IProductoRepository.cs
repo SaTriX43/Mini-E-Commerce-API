@@ -8,6 +8,7 @@ namespace Mini_E_Commerce_API.DALs.ProductoRepositoryCarpeta
         public Task<Producto?> ObtenerProductoPorIdAsync(int productoId);
         public Task<List<Producto>> ObtenerProductosAsync();
         public Task<bool> ExisteProductoConNombreEnCategoriaAsync(string productoNombre, int categoriaId);
+       
         public Task GuardarCambiosAsync();
     }
 }

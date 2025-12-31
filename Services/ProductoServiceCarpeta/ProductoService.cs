@@ -98,6 +98,11 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
 
         public async Task<Result<ProductoDto>> ObtenerProductoPorIdAsync(int usuarioId, int productoId)
         {
+            if (productoId <= 0)
+            {
+                return Result<ProductoDto>.Failure($"Su productoId no puede ser menor o igual a 0");
+            }
+
             var usuarioExise = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
 
             if(usuarioExise == null)
@@ -191,6 +196,41 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
                 }
                     productoEncontrado.Stock -= cantidad;
             }
+            productoEncontrado.UpdatedAt = DateTime.UtcNow;
+
+            await _productoRepository.GuardarCambiosAsync();
+
+            return Result.Success();
+        }
+        public async Task<Result> EliminarProductoAsync(int usuarioId, int productoId)
+        {
+            if(productoId <= 0)
+            {
+                return Result.Failure($"Su productoId no puede ser menor o igual a 0");
+            }
+
+            var usuarioEncontrado = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
+
+            if(usuarioEncontrado == null)
+            {
+                return Result.Failure($"Su usuario con id = {usuarioId} no existe");
+            }
+
+            var productoEncontrado = await _productoRepository.ObtenerProductoPorIdAsync(productoId);
+
+            if(productoEncontrado == null)
+            {
+                return Result.Failure($"Su producto con id = {productoId} no existe");
+            }
+
+            if(productoEncontrado.IsActive == false)
+            {
+                return Result.Failure($"Su producto con id = {productoId} ya fue eliminado");
+            }
+
+
+            productoEncontrado.IsActive = false;
+            productoEncontrado.UpdatedAt = DateTime.UtcNow;
 
             await _productoRepository.GuardarCambiosAsync();
 

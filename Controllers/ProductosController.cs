@@ -65,15 +65,6 @@ namespace Mini_E_Commerce_API.Controllers
         [HttpGet("obtener/{productoId}")]
         public async Task<IActionResult> ObtenerProductoPorId(int productoId)
         {
-            if(productoId <= 0)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = "Su productoId debe de ser un numero"
-                });
-            }
-
             var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (!int.TryParse(usuarioIdClaim, out var usuarioId))
@@ -168,6 +159,8 @@ namespace Mini_E_Commerce_API.Controllers
         [HttpPatch("disminuir-stock/{productoId}")]
         public async Task<IActionResult> DisminuirStockProducto([FromBody] StockDto stock, int productoId)
         {
+
+
             var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(usuarioIdClaim, out var usuarioId))
             {
@@ -186,6 +179,34 @@ namespace Mini_E_Commerce_API.Controllers
                 {
                     success = false,
                     error = resultadoIncrementar.Error
+                });
+            }
+
+            return NoContent();
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("eliminar/{productoId}")]
+        public async Task<IActionResult> EliminarProducto(int productoId)
+        {
+            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "Su usuarioId debe de ser un numero"
+                });
+            }
+
+            var productoEliminado = await _productoService.EliminarProductoAsync(usuarioId, productoId);
+
+            if(!productoEliminado.IsSuccess)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = productoEliminado.Error
                 });
             }
 
