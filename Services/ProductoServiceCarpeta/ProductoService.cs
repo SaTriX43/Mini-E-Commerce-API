@@ -185,10 +185,11 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
                 productoEncontrado.Stock += cantidad;
             }else
             {
-                if(productoEncontrado.Stock >= cantidad)
+                if(productoEncontrado.Stock < cantidad)
                 {
-                    productoEncontrado.Stock -= cantidad;
+                    return Result.Failure($"Su producto con id = {productoId} no tiene stock suficiente");
                 }
+                    productoEncontrado.Stock -= cantidad;
             }
 
             await _productoRepository.GuardarCambiosAsync();
