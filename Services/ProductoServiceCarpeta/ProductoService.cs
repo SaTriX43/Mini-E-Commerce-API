@@ -1,4 +1,5 @@
-﻿using Mini_E_Commerce_API.DALs.CategoriaRepositoryCarpeta;
+﻿using Microsoft.AspNetCore.Mvc;
+using Mini_E_Commerce_API.DALs.CategoriaRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.ProductoRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.UsuariorRepositoryCarpeta;
 using Mini_E_Commerce_API.DTOs.ProductoDtoCarpeta;
@@ -58,7 +59,7 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
 
             var productoNombreNormzalizado = productoCrearDto.Name.Trim().ToLower();
 
-            var existe = await _productoRepository.ExisteProductoConNombreEnCategoriaAsync(productoNombreNormzalizado,productoCrearDto.CategoryId);
+            var existe = await _productoRepository.ExisteProductoConNombreEnCategoriaAsync(productoNombreNormzalizado,productoCrearDto.CategoryId,null);
 
             if (existe)
             {
@@ -231,6 +232,67 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
 
             productoEncontrado.IsActive = false;
             productoEncontrado.UpdatedAt = DateTime.UtcNow;
+
+            await _productoRepository.GuardarCambiosAsync();
+
+            return Result.Success();
+        }
+        public async Task<Result> ActualizarProductoAsync(int usuarioId,int productoId, ProductoActualizarDto productoActualizarDto)
+        {
+            if(productoId <= 0)
+            {
+                return Result.Failure($"Su productoId no debe de ser menor o igual a 0");
+            }
+
+            if(productoActualizarDto.Price <= 0)
+            {
+                return Result.Failure("El precio del producto no puede ser menor o igual a 0");
+            }
+
+            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
+
+            if(usuario == null)
+            {
+                return Result.Failure($"Su usuario con id = {usuarioId} no existe");
+            }
+
+            var producto = await _productoRepository.ObtenerProductoPorIdAsync(productoId);
+
+            if(producto == null)
+            {
+                return Result.Failure($"Su producto con id = {productoId} no existe");
+            }
+
+            if(!producto.IsActive)
+            {
+                return Result.Failure($"Su producto con id = {productoId} esta desactivado");
+            }
+
+            var categoriaEncontrada = await _categoriaRepository.ObtenerCategoriaPorIdAsync(productoActualizarDto.CategoryId);
+
+            if (categoriaEncontrada == null)
+            {
+                return Result.Failure($"Su categoria con id = {productoActualizarDto.CategoryId} no existe");
+            }
+            
+            if (!categoriaEncontrada.IsActive)
+            {
+                return Result.Failure($"Su categoria con id = {productoActualizarDto.CategoryId} esta desactivado");
+            }
+
+            var productoNombreNormalizado = productoActualizarDto.Name.Trim().ToLower();
+            var existe = await _productoRepository.ExisteProductoConNombreEnCategoriaAsync(productoNombreNormalizado, productoActualizarDto.CategoryId, productoId);
+
+            if(existe)
+            {
+                return Result.Failure("No puede existir dos productos con nombres igualas en la misma categoria");
+            }
+
+            producto.Name = productoNombreNormalizado;
+            producto.Description = productoActualizarDto.Description;
+            producto.CategoryId = productoActualizarDto.CategoryId;
+            producto.Price = productoActualizarDto.Price;
+            producto.UpdatedAt = DateTime.UtcNow;
 
             await _productoRepository.GuardarCambiosAsync();
 

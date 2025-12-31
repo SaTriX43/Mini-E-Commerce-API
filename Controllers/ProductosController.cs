@@ -212,5 +212,42 @@ namespace Mini_E_Commerce_API.Controllers
 
             return NoContent();
         }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("actualizar/{productoId}")]
+        public async Task<IActionResult> ActualizarProducto(int productoId, [FromBody] ProductoActualizarDto productoActualizarDto)
+        {
+            if(!ModelState.IsValid)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = ModelState
+                });
+            }
+
+            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "Su usuarioId debe de ser un numero"
+                });
+            }
+
+            var productoActualizado = await _productoService.ActualizarProductoAsync(usuarioId, productoId,productoActualizarDto);
+
+            if (!productoActualizado.IsSuccess)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = productoActualizado.Error
+                });
+            }
+
+            return NoContent();
+        }
     }
 }

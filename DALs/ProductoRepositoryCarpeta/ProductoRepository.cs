@@ -17,13 +17,22 @@ namespace Mini_E_Commerce_API.DALs.ProductoRepositoryCarpeta
             await _context.SaveChangesAsync();
             return producto;
         }
-        public async Task<bool> ExisteProductoConNombreEnCategoriaAsync(string productoNombre, int categoriaId)
+        public async Task<bool> ExisteProductoConNombreEnCategoriaAsync(string productoNombre, int categoriaId, int? productoIdExcluir)
         {
 
+            if(productoIdExcluir != null)
+            {
+                return await _context.Productos.AnyAsync(p =>
+                    p.Name == productoNombre &&
+                    p.CategoryId == categoriaId &&
+                    p.Id != productoIdExcluir &&
+                    p.IsActive
+                );
+            }
             return await _context.Productos.AnyAsync(p =>
-                p.Name == productoNombre &&
-                p.CategoryId == categoriaId &&
-                p.IsActive
+                    p.Name == productoNombre &&
+                    p.CategoryId == categoriaId &&
+                    p.IsActive
             );
         }
         public async Task<Producto?> ObtenerProductoPorIdAsync(int productoId)
