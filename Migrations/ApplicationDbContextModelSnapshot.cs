@@ -199,6 +199,43 @@ namespace Mini_E_Commerce_API.Migrations
                     b.ToTable("Productos");
                 });
 
+            modelBuilder.Entity("Mini_E_Commerce_API.Models.RefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
             modelBuilder.Entity("Mini_E_Commerce_API.Models.Usuario", b =>
                 {
                     b.Property<int>("Id")
@@ -310,6 +347,17 @@ namespace Mini_E_Commerce_API.Migrations
                     b.Navigation("Categoria");
                 });
 
+            modelBuilder.Entity("Mini_E_Commerce_API.Models.RefreshToken", b =>
+                {
+                    b.HasOne("Mini_E_Commerce_API.Models.Usuario", "Usuario")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
             modelBuilder.Entity("Mini_E_Commerce_API.Models.Carrito", b =>
                 {
                     b.Navigation("Items");
@@ -323,6 +371,11 @@ namespace Mini_E_Commerce_API.Migrations
             modelBuilder.Entity("Mini_E_Commerce_API.Models.Orden", b =>
                 {
                     b.Navigation("Detalles");
+                });
+
+            modelBuilder.Entity("Mini_E_Commerce_API.Models.Usuario", b =>
+                {
+                    b.Navigation("RefreshTokens");
                 });
 #pragma warning restore 612, 618
         }

@@ -141,7 +141,7 @@ namespace Mini_E_Commerce_API.Controllers
                 });
             }
 
-            var resultadoIncrementar = await _productoService.OpearacionStockProductoAsync(usuarioId, productoId,TipoDeMovimiento.Incrementar,stock.Cantidad);
+            var resultadoIncrementar = await _productoService.OperacionStockProductoAsync(usuarioId, productoId,TipoDeMovimiento.Incrementar,stock.Cantidad);
 
             if (!resultadoIncrementar.IsSuccess) {
                 return BadRequest(new
@@ -171,7 +171,7 @@ namespace Mini_E_Commerce_API.Controllers
                 });
             }
 
-            var resultadoIncrementar = await _productoService.OpearacionStockProductoAsync(usuarioId, productoId, TipoDeMovimiento.Disminuir, stock.Cantidad);
+            var resultadoIncrementar = await _productoService.OperacionStockProductoAsync(usuarioId, productoId, TipoDeMovimiento.Disminuir, stock.Cantidad);
 
             if (!resultadoIncrementar.IsSuccess)
             {

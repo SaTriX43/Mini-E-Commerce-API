@@ -7,6 +7,7 @@ public class ApplicationDbContext : DbContext
         : base(options) { }
 
     public DbSet<Usuario> Usuarios => Set<Usuario>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Categoria> Categorias => Set<Categoria>();
     public DbSet<Producto> Productos => Set<Producto>();
     public DbSet<Carrito> Carritos => Set<Carrito>();
@@ -20,6 +21,16 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<Usuario>()
             .HasIndex(u => u.Email)
+            .IsUnique();
+
+        modelBuilder.Entity<RefreshToken>()
+            .HasOne(rt => rt.Usuario)
+            .WithMany(u => u.RefreshTokens)
+            .HasForeignKey(rt => rt.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RefreshToken>()
+            .HasIndex(rt => rt.Token)
             .IsUnique();
 
         modelBuilder.Entity<Producto>()

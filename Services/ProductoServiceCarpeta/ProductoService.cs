@@ -160,7 +160,7 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             return Result<List<ProductoDto>>.Success(productosDtos);
         }
 
-        public async Task<Result> OpearacionStockProductoAsync(int usuarioId, int productoId, TipoDeMovimiento tipoDeMovimiento, int cantidad)
+        public async Task<Result> OperacionStockProductoAsync(int usuarioId, int productoId, TipoDeMovimiento tipoDeMovimiento, int cantidad)
         {
             var usuarioEncontrado = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
 
