@@ -52,5 +52,69 @@ namespace Mini_E_Commerce_API.Controllers
 
             return Ok(categoria.Value);
         }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPut("actualizar/{categoriaId}")]
+        public async Task<IActionResult> ActualizarCategoria(
+            int categoriaId,
+            [FromBody] CategoriaCrearDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "El usuarioId no es válido"
+                });
+            }
+
+            var result = await _categoriaService
+                .ActualizarCategoriaAsync(dto, categoriaId, usuarioId);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = result.Error
+                });
+            }
+
+            return NoContent();
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("desactivar/{categoriaId}")]
+        public async Task<IActionResult> DesactivarCategoria(int categoriaId)
+        {
+            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "El usuarioId no es válido"
+                });
+            }
+
+            var result = await _categoriaService
+                .DesactivarCategoriaAsync(usuarioId, categoriaId);
+
+            if (!result.IsSuccess)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = result.Error
+                });
+            }
+
+            return NoContent();
+        }
     }
 }
