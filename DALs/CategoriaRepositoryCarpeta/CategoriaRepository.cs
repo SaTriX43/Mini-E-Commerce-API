@@ -15,5 +15,18 @@ namespace Mini_E_Commerce_API.DALs.CategoriaRepositoryCarpeta
             var categoriaEcontrada = await _context.Categorias.FirstOrDefaultAsync(c => c.Id == categoriaId);
             return categoriaEcontrada;
         }
+
+        public async Task<Categoria?> ObtenerCategoriaPorNombreAsync(string categoriaNombre)
+        {
+            var categoriaEncontrada = await _context.Categorias.FirstOrDefaultAsync(c => c.Name == categoriaNombre);
+            return categoriaEncontrada;
+        }
+
+        public async Task<Categoria> CrearCategoriaAsync(Categoria categoria)
+        {
+            _context.Categorias.Add(categoria);
+            await _context.SaveChangesAsync();
+            return categoria;
+        }
     }
 }
