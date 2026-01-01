@@ -117,6 +117,27 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
 
             return Result.Success();
         }
+
+        public async Task<Result<List<CategoriaDto>>> ObtenerCategoriasAsync(int usuarioId)
+        {
+            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
+            if (usuario == null)
+                return Result<List<CategoriaDto>>.Failure("El usuario no existe");
+
+            bool soloActivas = usuario.Rol != RolUsuario.Admin;
+
+            var categorias = await _categoriaRepository.ObtenerCategoriasAsync(soloActivas);
+
+            var dto = categorias.Select(c => new CategoriaDto
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Description = c.Description,
+                IsActive = c.IsActive
+            }).ToList();
+
+            return Result<List<CategoriaDto>>.Success(dto);
+        }
     }
 }
 

@@ -44,5 +44,15 @@ namespace Mini_E_Commerce_API.DALs.CategoriaRepositoryCarpeta
         {
             await _context.SaveChangesAsync();
         }
+
+        public async Task<List<Categoria>> ObtenerCategoriasAsync(bool soloActivas)
+        {
+            var query = _context.Categorias.AsQueryable();
+
+            if (soloActivas)
+                query = query.Where(c => c.IsActive);
+
+            return await query.ToListAsync();
+        }
     }
 }

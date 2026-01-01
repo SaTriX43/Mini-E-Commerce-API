@@ -116,5 +116,27 @@ namespace Mini_E_Commerce_API.Controllers
 
             return NoContent();
         }
+
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> ObtenerCategorias()
+        {
+            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "El usuarioId no es válido"
+                });
+            }
+
+            var result = await _categoriaService.ObtenerCategoriasAsync(usuarioId);
+
+            if (!result.IsSuccess)
+                return BadRequest(result.Error);
+
+            return Ok(result.Value);
+        }
     }
 }
