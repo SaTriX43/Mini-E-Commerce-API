@@ -7,6 +7,8 @@ namespace Mini_E_Commerce_API.Services.AutenticacionServiceCarpeta
     {
         Task<Result<AutenticacionResponseDto>> RegistrarAsync(RegistroRequestDto dto);
         Task<Result<AutenticacionResponseDto>> LoginAsync(LoginRequestDto dto);
+        Task<Result<AutenticacionResponseDto>> RefreshToken(RefreshTokenRenovarDto token);
+        Task<Result> Logout(RefreshTokenRenovarDto token);
     }
 
 }

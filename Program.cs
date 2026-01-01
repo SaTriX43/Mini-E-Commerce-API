@@ -57,7 +57,7 @@ builder.Services
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
-builder.Services.AddScoped<IAutenticacionRepository, AutenticacionRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 builder.Services.AddScoped<IProductoService, ProductoService>();

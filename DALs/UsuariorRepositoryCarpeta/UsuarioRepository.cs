@@ -16,5 +16,17 @@ namespace Mini_E_Commerce_API.DALs.UsuariorRepositoryCarpeta
             return usuarioEncontrado;
         }
 
+        public async Task<Usuario?> ObtenerPorEmailAsync(string email)
+        {
+            return await _context.Usuarios
+                .FirstOrDefaultAsync(u => u.Email == email);
+        }
+
+        public async Task<Usuario> CrearAsync(Usuario usuario)
+        {
+            _context.Usuarios.Add(usuario);
+            await _context.SaveChangesAsync();
+            return usuario;
+        }
     }
 }
