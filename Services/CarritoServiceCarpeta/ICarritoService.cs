@@ -1,0 +1,10 @@
+﻿using Mini_E_Commerce_API.DTOs.CarritoDtoCarpeta;
+using Mini_E_Commerce_API.Models;
+
+namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
+{
+    public interface ICarritoService
+    {
+        public Task<Result<CarritoDto>> ObtenerCarritoPorUsuarioIdAsync(int usuarioId);
+    }
+}
