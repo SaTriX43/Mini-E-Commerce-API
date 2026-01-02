@@ -86,5 +86,43 @@ namespace Mini_E_Commerce_API.Controllers
 
             return NoContent();
         }
+
+        [Authorize]
+        [HttpPost("actualizar-cantidad-item")]
+        public async Task<IActionResult> ActualizarCantidadCarritoItem([FromBody] CarritoItemAgregarDto itemAgregarDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = ModelState
+                });
+            }
+
+            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "Su usuarioId debe de ser un numero"
+                });
+            }
+
+            var resultado = await _carritoService.ActualizarCantidadCarritoItemAsync(itemAgregarDto, usuarioId);
+
+            if (!resultado.IsSuccess)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = resultado.Error
+                });
+            }
+
+            return NoContent();
+        }
     }
 }

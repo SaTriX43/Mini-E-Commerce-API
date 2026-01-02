@@ -76,56 +76,29 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
                 return Result.Failure("La cantidad no debe de ser menor o igual a 0");
             }
 
-            if (itemAgregarDto.ProductId <= 0)
+            var ctx = await ObtenerContextoCarritoAsync(usuarioId, itemAgregarDto.ProductId);
+
+            if(!ctx.IsSuccess)
             {
-                return Result.Failure("El productoId no debe de ser menor o igual a 0");
+                return Result.Failure(ctx.Error);
             }
 
-            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
+            var item = ctx.Value.Item;
+            var producto = ctx.Value.Producto;
+            var carrito = ctx.Value.Carrito;
 
-            if(usuario == null)
-            {
-                return Result.Failure($"Su usuario con id {usuarioId} no existe");
-            }
-
-            var carrito = await _carritoRepository.ObtenerCarritoPorUsuarioIdAsync(usuarioId);
-
-            if (carrito == null) {
-                var carritoModel = new Carrito
-                {
-                    UserId = usuarioId,
-                    CreatedAt = DateTime.UtcNow,
-                };
-                carrito = _carritoRepository.CrearCarrito(carritoModel);
-                await _carritoRepository.GuardarCambiosAsync();
-            }
-
-            var producto = await _productoRepository.ObtenerProductoPorIdAsync(itemAgregarDto.ProductId);
-
-            if(producto == null)
-            {
-                return Result.Failure($"Su producto con id {itemAgregarDto.ProductId} no existe");
-            }
-
-            if(!producto.IsActive)
-            {
-                return Result.Failure($"Su producto con id {itemAgregarDto.ProductId} esta inactivo");
-            }
-            
-            if(itemAgregarDto.Quantity > producto.Stock)
+            if(item == null && itemAgregarDto.Quantity > producto.Stock)
             {
                 return Result.Failure($"Su producto con id {itemAgregarDto.ProductId} no tiene suficiente stock");
             }
 
-            var carritoItem = await _carritoRepository.ObtenerCarritoItemAsync(carrito.Id,producto.Id);
-
-            if (carritoItem != null)
+            if (item != null)
             {
-                if(carritoItem.Quatity + itemAgregarDto.Quantity > producto.Stock)
+                if(item.Quatity + itemAgregarDto.Quantity > producto.Stock)
                 {
                     return Result.Failure($"Su producto con id {itemAgregarDto.ProductId} no tiene suficiente stock");
                 }
-                carritoItem.Quatity += itemAgregarDto.Quantity;
+                item.Quatity += itemAgregarDto.Quantity;
             }else
             {
                 var carritoItemModel = new CarritoItem
@@ -143,6 +116,93 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
             await _carritoRepository.GuardarCambiosAsync();
 
             return Result.Success();
+        }
+        public async Task<Result> ActualizarCantidadCarritoItemAsync(CarritoItemAgregarDto itemAgregarDto, int usuarioId)
+        {
+            if (itemAgregarDto.Quantity <= 0)
+            {
+                return Result.Failure("La cantidad no debe de ser menor o igual a 0");
+            }
+
+            var ctx = await ObtenerContextoCarritoAsync(usuarioId, itemAgregarDto.ProductId);
+
+            if (!ctx.IsSuccess)
+            {
+                return Result.Failure(ctx.Error);
+            }
+
+            var item = ctx.Value.Item;
+            var producto = ctx.Value.Producto;
+            var carrito = ctx.Value.Carrito;
+
+            if (item == null)
+            {
+                return Result.Failure($"Su item no existe en el carrito");
+            }
+            
+            if (itemAgregarDto.Quantity > producto.Stock)
+            {
+                return Result.Failure($"Su producto con id {itemAgregarDto.ProductId} no tiene suficiente stock");
+            }
+
+            item.Quatity = itemAgregarDto.Quantity;
+
+            carrito.UpdatedAt = DateTime.UtcNow;
+
+            await _carritoRepository.GuardarCambiosAsync();
+
+            return Result.Success();
+        }
+
+
+        private async Task<Result<ContextoCarritoDto>> ObtenerContextoCarritoAsync(int usuarioId, int productoId)
+        {
+            if (productoId <= 0)
+            {
+                return Result<ContextoCarritoDto>.Failure("El productoId no debe de ser menor o igual a 0");
+            }
+
+            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
+
+            if (usuario == null)
+            {
+                return Result<ContextoCarritoDto>.Failure($"Su usuario con id {usuarioId} no existe");
+            }
+
+            var carrito = await _carritoRepository.ObtenerCarritoPorUsuarioIdAsync(usuarioId);
+
+            if (carrito == null)
+            {
+                var carritoModel = new Carrito
+                {
+                    UserId = usuarioId,
+                    CreatedAt = DateTime.UtcNow,
+                };
+                carrito = _carritoRepository.CrearCarrito(carritoModel);
+                await _carritoRepository.GuardarCambiosAsync();
+            }
+
+            var producto = await _productoRepository.ObtenerProductoPorIdAsync(productoId);
+
+            if (producto == null)
+            {
+                return Result<ContextoCarritoDto>.Failure($"Su producto con id {productoId} no existe");
+            }
+
+            if (!producto.IsActive)
+            {
+                return Result<ContextoCarritoDto>.Failure($"Su producto con id {productoId} esta inactivo");
+            }
+
+            var carritoItem = await _carritoRepository.ObtenerCarritoItemAsync(carrito.Id, producto.Id);
+
+            return Result<ContextoCarritoDto>.Success(new ContextoCarritoDto
+            {
+                Producto = producto,
+                Carrito = carrito,
+                Item = carritoItem,
+                Usuario = usuario,
+            });
         }
     }
 }
