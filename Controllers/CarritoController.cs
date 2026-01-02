@@ -88,7 +88,7 @@ namespace Mini_E_Commerce_API.Controllers
         }
 
         [Authorize]
-        [HttpPost("actualizar-cantidad-item")]
+        [HttpPatch("actualizar-cantidad-item")]
         public async Task<IActionResult> ActualizarCantidadCarritoItem([FromBody] CarritoItemAgregarDto itemAgregarDto)
         {
             if (!ModelState.IsValid)
@@ -112,6 +112,35 @@ namespace Mini_E_Commerce_API.Controllers
             }
 
             var resultado = await _carritoService.ActualizarCantidadCarritoItemAsync(itemAgregarDto, usuarioId);
+
+            if (!resultado.IsSuccess)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = resultado.Error
+                });
+            }
+
+            return NoContent();
+        }
+
+        [Authorize]
+        [HttpDelete("eliminar-item/{carritoItemId}")]
+        public async Task<IActionResult> ActualizarCantidadCarritoItem(int carritoItemId)
+        {
+            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "Su usuarioId debe de ser un numero"
+                });
+            }
+
+            var resultado = await _carritoService.EliminarCarritoItemAsync(carritoItemId, usuarioId);
 
             if (!resultado.IsSuccess)
             {

@@ -37,6 +37,18 @@ namespace Mini_E_Commerce_API.DALs.CarritoRepositoryCarpeta
             return carritoItem;
         }
 
+        public void EliminarItemCarrito(CarritoItem carritoItem)
+        {
+            _context.CarritoItems.Remove(carritoItem);
+        }
+
+        public async Task<CarritoItem?> ObtenerCarritoItemPorIdAsync(int carritoItemId)
+        {
+            var carritoItem = await _context.CarritoItems
+                .Include(ci => ci.Carrito)
+                .FirstOrDefaultAsync(ci => ci.Id == carritoItemId);
+            return carritoItem;
+        }
         public async Task GuardarCambiosAsync()
         {
             await _context.SaveChangesAsync();

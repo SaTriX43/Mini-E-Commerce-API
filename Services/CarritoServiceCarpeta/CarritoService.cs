@@ -153,7 +153,36 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
 
             return Result.Success();
         }
+        public async Task<Result> EliminarCarritoItemAsync(int carritoItemId, int usuarioId)
+        {
+            if(carritoItemId <= 0)
+            {
+                return Result.Failure("El id de carritoItem no puede ser menor o igual a 0");
+            }
 
+            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
+
+            if(usuario == null)
+            {
+                return Result.Failure($"Usuario con id = {usuarioId} no existe");
+            }
+
+            var carritoItem = await _carritoRepository.ObtenerCarritoItemPorIdAsync(carritoItemId);
+
+            if (carritoItem == null)
+            {
+                return Result.Failure("El item no existe");
+            }
+
+            if (carritoItem.Carrito.UserId != usuarioId) {
+                return Result.Failure("No tiene permiso para eliminar este item");
+            }
+
+            _carritoRepository.EliminarItemCarrito(carritoItem);
+            await _carritoRepository.GuardarCambiosAsync();
+
+            return Result.Success();
+        }
 
         private async Task<Result<ContextoCarritoDto>> ObtenerContextoCarritoAsync(int usuarioId, int productoId)
         {
