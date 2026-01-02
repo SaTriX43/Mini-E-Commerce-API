@@ -5,6 +5,9 @@ namespace Mini_E_Commerce_API.DALs.CarritoRepositoryCarpeta
     public interface ICarritoRepository
     {
         public Task<Carrito?> ObtenerCarritoPorUsuarioIdAsync(int usuarioId);
-        public Task<Carrito> CrearCarritoAsync(Carrito carrito);
+        public Carrito CrearCarrito(Carrito carrito);
+        public void AgregarCarritoItem(CarritoItem carritoItem);
+        public Task<CarritoItem?> ObtenerCarritoItemAsync(int carritoId, int productoId);
+        public Task GuardarCambiosAsync();
     }
 }
