@@ -233,7 +233,6 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
                     CreatedAt = DateTime.UtcNow,
                 };
                 carrito = _carritoRepository.CrearCarrito(carritoModel);
-                await _carritoRepository.GuardarCambiosAsync();
             }
 
             var producto = await _productoRepository.ObtenerProductoPorIdAsync(productoId);
