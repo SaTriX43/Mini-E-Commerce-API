@@ -5,12 +5,14 @@ using Mini_E_Commerce_API.DALs;
 using Mini_E_Commerce_API.DALs.AutenticacionRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.CarritoRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.CategoriaRepositoryCarpeta;
+using Mini_E_Commerce_API.DALs.OrdenRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.ProductoRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.UsuariorRepositoryCarpeta;
 using Mini_E_Commerce_API.Middleware;
 using Mini_E_Commerce_API.Services.AutenticacionServiceCarpeta;
 using Mini_E_Commerce_API.Services.CarritoServiceCarpeta;
 using Mini_E_Commerce_API.Services.CategoriaServiceCarpeta;
+using Mini_E_Commerce_API.Services.OrdenServiceCarpeta;
 using Mini_E_Commerce_API.Services.ProductoServiceCarpeta;
 using Serilog;
 using System.Text;
@@ -73,6 +75,9 @@ builder.Services.AddScoped<ICategoriaService, CategoriaService>();
 
 builder.Services.AddScoped<ICarritoService, CarritoService>();
 builder.Services.AddScoped<ICarritoRepository, CarritoRepository>();
+
+builder.Services.AddScoped<IOrdenService, OrdenService>();
+builder.Services.AddScoped<IOrdenRepository,OrdenRepository>();
 
 builder.Services.AddScoped<IUnidadDeTrabajo, UnidadDeTrabajo>();
 var app = builder.Build();
