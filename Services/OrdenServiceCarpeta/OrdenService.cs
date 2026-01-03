@@ -17,10 +17,10 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
         private readonly IUnidadDeTrabajo _unidadDeTrabajo;
         private readonly IProductoRepository _productoRepository;
 
-        public OrdenService(IOrdenRepository ordenRepository, IUsuarioRepository usuarioRepository, IUnidadDeTrabajo unidadDeTrabajo,ICarritoRepository carritoRepository,IProductoRepository productoRepository) { 
+        public OrdenService(IOrdenRepository ordenRepository, IUsuarioRepository usuarioRepository, IUnidadDeTrabajo unidadDeTrabajo, ICarritoRepository carritoRepository, IProductoRepository productoRepository) {
             _ordenRepository = ordenRepository;
             _usuarioRepository = usuarioRepository;
-            _unidadDeTrabajo = unidadDeTrabajo; 
+            _unidadDeTrabajo = unidadDeTrabajo;
             _carritoRepository = carritoRepository;
             _productoRepository = productoRepository;
         }
@@ -46,13 +46,13 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
 
             decimal montoTotal = 0;
 
-            foreach (var item in carrito.Items) { 
+            foreach (var item in carrito.Items) {
 
                 if (item.Producto == null || !item.Producto.IsActive) {
                     return Result<OrdenDto>.Failure($"No se pudo crear orden por, Producto con id {item.ProductId} nullo o inactivo");
                 }
 
-                if(item.Quatity > item.Producto.Stock)
+                if (item.Quatity > item.Producto.Stock)
                 {
                     return Result<OrdenDto>.Failure($"No se pudo crear orden por, Producto con id {item.ProductId} no tiene suficiente stock");
                 }
@@ -103,7 +103,7 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
         {
             var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
 
-            if(usuario == null)
+            if (usuario == null)
             {
                 return Result<List<OrdenDto>>.Failure($"Su usuario con id = {usuarioId} no existe");
             }
@@ -124,11 +124,56 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
                     ProductId = od.ProductId,
                     Quantity = od.Quantity,
                     Subtotal = od.Subtotal,
-                    UnitPrice = od.UnitPrice    
+                    UnitPrice = od.UnitPrice
                 }).ToList(),
             }).ToList();
 
             return Result<List<OrdenDto>>.Success(ordenesDto);
         }
+        public async Task<Result<OrdenDto>> ObtenerOrdenDetallesAsync(int ordenId, int usuarioId)
+        {
+            if (ordenId <= 0)
+            {
+                return Result<OrdenDto>.Failure("Su orden id no debe de ser menor o igual a 0");
+            }
+
+            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
+
+            if (usuario == null)
+            {
+                return Result<OrdenDto>.Failure($"Su usuario con id = {usuarioId} no existe");
+            }
+
+            var orden = await _ordenRepository.ObtenerOrdenPorOrdenIdAsync(ordenId);
+
+            if (orden == null || orden.UserId != usuarioId)
+            {
+                return Result<OrdenDto>.Failure($"Orden no existe");
+            }
+
+
+            var ordenDto = new OrdenDto
+            {
+                UserId = orden.UserId,
+                CreatedAt = orden.CreatedAt,
+                Id = ordenId,
+                Status = orden.Status,
+                TotalAmount = orden.TotalAmount,
+                OrdenDetallesDtos = orden.Detalles.Select(od => new OrdenDetallesDto
+                {
+                    Id = od.Id,
+                    OrderId = od.OrderId,
+                    ProductId = od.ProductId,
+                    Quantity = od.Quantity,
+                    Subtotal = od.Subtotal,
+                    UnitPrice = od.UnitPrice
+                }).ToList()
+            };
+
+
+
+            return Result<OrdenDto>.Success(ordenDto);
+        }
+
     }
 }

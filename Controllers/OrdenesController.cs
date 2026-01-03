@@ -81,5 +81,38 @@ namespace Mini_E_Commerce_API.Controllers
                 value = ordenes.Value
             });
         }
+
+        [Authorize]
+        [HttpGet("{ordenId}")]
+        public async Task<IActionResult> ObtenerOrdenDetallesPorId(int ordenId)
+        {
+            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(usuarioIdClaim, out int usuarioId))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "Su usuario id debe de ser un numero"
+                });
+            }
+
+            var ordenDetalles = await _ordenService.ObtenerOrdenDetallesAsync(ordenId,usuarioId);
+
+            if (!ordenDetalles.IsSuccess)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = ordenDetalles.Error
+                });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                value = ordenDetalles.Value
+            });
+        }
     }
 }

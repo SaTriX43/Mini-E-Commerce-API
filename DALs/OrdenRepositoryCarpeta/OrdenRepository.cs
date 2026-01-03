@@ -21,10 +21,17 @@ namespace Mini_E_Commerce_API.DALs.OrdenRepositoryCarpeta
         {
             var ordenes = await _context.Ordenes
                 .Include(o => o.Detalles)
-                .Where(o => o.UserId == usuarioId)
+                .Where(o => o.UserId == usuarioId).OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
 
             return ordenes;
+        }
+        public async Task<Orden?> ObtenerOrdenPorOrdenIdAsync(int ordenId)
+        {
+            var orden = await _context.Ordenes
+                .Include(o => o.Detalles)
+                .FirstOrDefaultAsync(o => o.Id == ordenId);
+            return orden;
         }
     }
 }
