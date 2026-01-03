@@ -11,10 +11,9 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         _context = context;
     }
 
-    public async Task<RefreshToken> CrearRefreshTokenAsync(RefreshToken refreshToken)
+    public RefreshToken CrearRefreshTokenAsync(RefreshToken refreshToken)
     {
         _context.RefreshTokens.Add(refreshToken);
-        await _context.SaveChangesAsync();
         return refreshToken;
     }
 
@@ -24,10 +23,5 @@ public class RefreshTokenRepository : IRefreshTokenRepository
             .Include(rt => rt.Usuario)
             .FirstOrDefaultAsync(rt => rt.Token == token);
         return refreshToken;
-    }
-
-    public async Task GuardarCambiosAsync()
-    {
-        await _context.SaveChangesAsync();
     }
 }

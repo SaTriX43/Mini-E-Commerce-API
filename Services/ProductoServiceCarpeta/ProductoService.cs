@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Mini_E_Commerce_API.DALs;
 using Mini_E_Commerce_API.DALs.CategoriaRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.ProductoRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.UsuariorRepositoryCarpeta;
@@ -13,12 +14,14 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
         private readonly IProductoRepository _productoRepository;
         private readonly ICategoriaRepository _categoriaRepository;
         private readonly IUsuarioRepository _usuarioRepository;
+        private readonly IUnidadDeTrabajo _unidadDeTrabajo;
 
-        public ProductoService(IProductoRepository productoRepository, IUsuarioRepository usuarioRepository, ICategoriaRepository categoriaRepository)
+        public ProductoService(IProductoRepository productoRepository, IUsuarioRepository usuarioRepository, ICategoriaRepository categoriaRepository, IUnidadDeTrabajo unidadDeTrabajo)
         {
             _productoRepository = productoRepository;
             _usuarioRepository = usuarioRepository;
             _categoriaRepository = categoriaRepository;
+            _unidadDeTrabajo = unidadDeTrabajo;
         }
 
         public async Task<Result<ProductoDto>> CrearProductoAsync(ProductoCrearDto productoCrearDto, int usuarioId, string rol)
@@ -79,7 +82,7 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
                 IsActive = true,
             };
 
-            var productoCreado = await _productoRepository.CrearProductoAsync(productoModel);
+            var productoCreado = _productoRepository.CrearProducto(productoModel);
 
             var productoDto = new ProductoDto
             {
@@ -93,6 +96,8 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
                 IsActive = true,
                 UpdatedAt = productoCreado.UpdatedAt
             };
+
+            await _unidadDeTrabajo.GuardarCambiosAsync();
 
             return Result<ProductoDto>.Success( productoDto );
         }
@@ -199,7 +204,7 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             }
             productoEncontrado.UpdatedAt = DateTime.UtcNow;
 
-            await _productoRepository.GuardarCambiosAsync();
+            await _unidadDeTrabajo.GuardarCambiosAsync();
 
             return Result.Success();
         }
@@ -233,7 +238,7 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             productoEncontrado.IsActive = false;
             productoEncontrado.UpdatedAt = DateTime.UtcNow;
 
-            await _productoRepository.GuardarCambiosAsync();
+            await _unidadDeTrabajo.GuardarCambiosAsync();
 
             return Result.Success();
         }
@@ -294,7 +299,7 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             producto.Price = productoActualizarDto.Price;
             producto.UpdatedAt = DateTime.UtcNow;
 
-            await _productoRepository.GuardarCambiosAsync();
+            await _unidadDeTrabajo.GuardarCambiosAsync();
 
             return Result.Success();
         }

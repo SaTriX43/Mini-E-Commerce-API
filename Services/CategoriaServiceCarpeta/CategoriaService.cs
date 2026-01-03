@@ -1,4 +1,5 @@
-﻿using Mini_E_Commerce_API.DALs.CategoriaRepositoryCarpeta;
+﻿using Mini_E_Commerce_API.DALs;
+using Mini_E_Commerce_API.DALs.CategoriaRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.UsuariorRepositoryCarpeta;
 using Mini_E_Commerce_API.DTOs.CategoriaDtoCarpeta;
 using Mini_E_Commerce_API.Models;
@@ -10,10 +11,12 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
     {
         private readonly ICategoriaRepository _categoriaRepository;
         private readonly IUsuarioRepository _usuarioRepository;
+        private readonly IUnidadDeTrabajo _unidadDeTrabajo;
 
-        public CategoriaService(ICategoriaRepository categoriaRepository, IUsuarioRepository usuarioRepository) { 
+        public CategoriaService(ICategoriaRepository categoriaRepository, IUsuarioRepository usuarioRepository, IUnidadDeTrabajo unidadDeTrabajo) { 
             _categoriaRepository = categoriaRepository;
             _usuarioRepository = usuarioRepository;
+            _unidadDeTrabajo = unidadDeTrabajo;
         }
 
         public async Task<Result<CategoriaDto>> CrearCategoriaAsync(CategoriaCrearDto categoriaDto, int usuarioId)
@@ -40,7 +43,7 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
                 IsActive = true,
             };
 
-            var categoriaCreada = await _categoriaRepository.CrearCategoriaAsync(categoriaModel);
+            var categoriaCreada = _categoriaRepository.CrearCategoria(categoriaModel);
 
             var categoriaCreadaDto = new CategoriaDto
             {
@@ -51,6 +54,7 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
                 Name = categoriaCreada.Name,
             };
 
+            await _unidadDeTrabajo.GuardarCambiosAsync();
             return Result<CategoriaDto>.Success(categoriaCreadaDto);
         }
         public async Task<Result> ActualizarCategoriaAsync(
@@ -87,7 +91,7 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
             categoria.Name = nombreNormalizado;
             categoria.Description = dto.Description;
 
-            await _categoriaRepository.GuardarCambiosAsync();
+            await _unidadDeTrabajo.GuardarCambiosAsync();
 
             return Result.Success();
         }
@@ -113,7 +117,7 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
 
             categoria.IsActive = false;
 
-            await _categoriaRepository.GuardarCambiosAsync();
+            await _unidadDeTrabajo.GuardarCambiosAsync();
 
             return Result.Success();
         }

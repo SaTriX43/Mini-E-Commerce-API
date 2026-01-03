@@ -6,8 +6,7 @@ namespace Mini_E_Commerce_API.DALs.CategoriaRepositoryCarpeta
     {
         public Task<Categoria?> ObtenerCategoriaPorIdAsync(int categoriaId);
         public Task<bool> ExisteCategoriaConNombreAsync(string categoriaNombre, int? categoriaIdExcluir);
-        public Task<Categoria> CrearCategoriaAsync(Categoria categoria);
+        public Categoria CrearCategoria(Categoria categoria);
         public Task<List<Categoria>> ObtenerCategoriasAsync(bool soloActivas);
-        public Task GuardarCambiosAsync();
     }
 }

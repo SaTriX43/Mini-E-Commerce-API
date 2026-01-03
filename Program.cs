@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Mini_E_Commerce_API.DALs;
 using Mini_E_Commerce_API.DALs.AutenticacionRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.CarritoRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.CategoriaRepositoryCarpeta;
@@ -73,6 +74,7 @@ builder.Services.AddScoped<ICategoriaService, CategoriaService>();
 builder.Services.AddScoped<ICarritoService, CarritoService>();
 builder.Services.AddScoped<ICarritoRepository, CarritoRepository>();
 
+builder.Services.AddScoped<IUnidadDeTrabajo, UnidadDeTrabajo>();
 var app = builder.Build();
 
 app.UseMiddleware<ErrorHandlerMiddleware>();

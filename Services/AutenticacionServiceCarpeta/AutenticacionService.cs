@@ -1,5 +1,6 @@
 ﻿using Microsoft.Identity.Client;
 using Microsoft.IdentityModel.Tokens;
+using Mini_E_Commerce_API.DALs;
 using Mini_E_Commerce_API.DALs.AutenticacionRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.UsuariorRepositoryCarpeta;
 using Mini_E_Commerce_API.DTOs.AutenticacionDtoCarpeta;
@@ -15,16 +16,19 @@ public class AutenticacionService : IAutenticacionService
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IUsuarioRepository _usuarioRepository;
     private readonly IConfiguration _configuration;
+    private readonly IUnidadDeTrabajo _unidadDeTrabajo;
 
     public AutenticacionService(
         IRefreshTokenRepository refreshTokenRepository,
         IConfiguration configuration,
-        IUsuarioRepository usuarioRepository
+        IUsuarioRepository usuarioRepository,
+        IUnidadDeTrabajo unidadDeTrabajo
         )
     {
         _refreshTokenRepository = refreshTokenRepository;
         _configuration = configuration;
         _usuarioRepository = usuarioRepository;
+        _unidadDeTrabajo = unidadDeTrabajo;
     }
 
     public async Task<Result<AutenticacionResponseDto>> RegistrarAsync(RegistroRequestDto dto)
@@ -42,7 +46,7 @@ public class AutenticacionService : IAutenticacionService
             Rol = RolUsuario.User
         };
 
-        var usuarioCreado = await _usuarioRepository.CrearAsync(usuario);
+        var usuarioCreado = _usuarioRepository.Crear(usuario);
 
         var refreshTokenDiasExpiracion = _configuration.GetValue<int>("Jwt:RefreshTokenDays");
         var nuevoRefreshTokenModel = new RefreshToken
@@ -56,7 +60,8 @@ public class AutenticacionService : IAutenticacionService
 
         var token = GenerarJwt(usuario);
 
-        var refreshTokenCreado = await _refreshTokenRepository.CrearRefreshTokenAsync(nuevoRefreshTokenModel);
+        var refreshTokenCreado = _refreshTokenRepository.CrearRefreshTokenAsync(nuevoRefreshTokenModel);
+        await _unidadDeTrabajo.GuardarCambiosAsync();
         return Result<AutenticacionResponseDto>.Success(new AutenticacionResponseDto
         {
             AccessToken = token,
@@ -84,7 +89,8 @@ public class AutenticacionService : IAutenticacionService
             ExpiresAt = DateTime.UtcNow.AddDays(refreshTokenDiasExpiracion)
         };
         var token = GenerarJwt(usuario);
-        var refreshTokenCreado = await _refreshTokenRepository.CrearRefreshTokenAsync(nuevoRefreshTokenModel);
+        var refreshTokenCreado = _refreshTokenRepository.CrearRefreshTokenAsync(nuevoRefreshTokenModel);
+        await _unidadDeTrabajo.GuardarCambiosAsync();
 
         return Result<AutenticacionResponseDto>.Success(new AutenticacionResponseDto
         {
@@ -124,7 +130,7 @@ public class AutenticacionService : IAutenticacionService
         tokenEncontrado.IsUsed = true;
         tokenEncontrado.RevokedAt = DateTime.UtcNow;
 
-        await _refreshTokenRepository.GuardarCambiosAsync();
+        await _unidadDeTrabajo.GuardarCambiosAsync();
 
         var jwt = GenerarJwt(tokenEncontrado.Usuario);
         var refreshTokenDiasExpiracion = _configuration.GetValue<int>("Jwt:RefreshTokenDays");
@@ -137,7 +143,8 @@ public class AutenticacionService : IAutenticacionService
             ExpiresAt = DateTime.UtcNow.AddDays(refreshTokenDiasExpiracion)
         };
 
-        var refreshTokenCreado = await _refreshTokenRepository.CrearRefreshTokenAsync(nuevoRefreshTokenModel);
+        var refreshTokenCreado = _refreshTokenRepository.CrearRefreshTokenAsync(nuevoRefreshTokenModel);
+        await _unidadDeTrabajo.GuardarCambiosAsync();
 
         return Result<AutenticacionResponseDto>.Success(new AutenticacionResponseDto
         {
@@ -177,7 +184,7 @@ public class AutenticacionService : IAutenticacionService
         tokenEncontrado.IsUsed = true;
         tokenEncontrado.RevokedAt = DateTime.UtcNow;
 
-        await _refreshTokenRepository.GuardarCambiosAsync();
+        await _unidadDeTrabajo.GuardarCambiosAsync();
 
         return Result.Success();
     }

@@ -11,6 +11,5 @@ namespace Mini_E_Commerce_API.DALs.CarritoRepositoryCarpeta
         public void EliminarItemCarrito(CarritoItem carritoItem);
         public Task<CarritoItem?> ObtenerCarritoItemPorIdAsync(int carritoItemId);
         public Task VaciarCarritoItems(int carritoId);
-        public Task GuardarCambiosAsync();
     }
 }

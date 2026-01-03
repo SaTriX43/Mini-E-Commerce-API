@@ -1,4 +1,5 @@
-﻿using Mini_E_Commerce_API.DALs.CarritoRepositoryCarpeta;
+﻿using Mini_E_Commerce_API.DALs;
+using Mini_E_Commerce_API.DALs.CarritoRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.ProductoRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.UsuariorRepositoryCarpeta;
 using Mini_E_Commerce_API.DTOs.CarritoDtoCarpeta;
@@ -11,11 +12,13 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
         private readonly ICarritoRepository _carritoRepository;
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly IProductoRepository _productoRepository;
+        private readonly IUnidadDeTrabajo _unidadDeTrabajo;
 
-        public CarritoService(ICarritoRepository carritoRepository, IUsuarioRepository usuarioRepository, IProductoRepository productoRepository) { 
+        public CarritoService(ICarritoRepository carritoRepository, IUsuarioRepository usuarioRepository, IProductoRepository productoRepository, IUnidadDeTrabajo unidadDeTrabajo) { 
             _carritoRepository = carritoRepository;
             _usuarioRepository = usuarioRepository;
             _productoRepository = productoRepository;
+            _unidadDeTrabajo = unidadDeTrabajo;
         }
 
         public async Task<Result<CarritoDto>> ObtenerCarritoPorUsuarioIdAsync(int usuarioId)
@@ -37,7 +40,7 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
                     CreatedAt = DateTime.UtcNow,
                 };
                 carrito = _carritoRepository.CrearCarrito(carritoModel);
-                await _carritoRepository.GuardarCambiosAsync();
+                await _unidadDeTrabajo.GuardarCambiosAsync();
             }
 
             decimal total = 0;
@@ -68,7 +71,6 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
 
             return Result<CarritoDto>.Success(carritoDto);
         }
-
         public async Task<Result> AgregarCarritoItemAsync(CarritoItemAgregarDto itemAgregarDto, int usuarioId)
         {
             if(itemAgregarDto.Quantity <= 0)
@@ -113,7 +115,7 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
 
             carrito.UpdatedAt = DateTime.UtcNow;
 
-            await _carritoRepository.GuardarCambiosAsync();
+            await _unidadDeTrabajo.GuardarCambiosAsync();
 
             return Result.Success();
         }
@@ -149,7 +151,7 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
 
             carrito.UpdatedAt = DateTime.UtcNow;
 
-            await _carritoRepository.GuardarCambiosAsync();
+            await _unidadDeTrabajo.GuardarCambiosAsync();
 
             return Result.Success();
         }
@@ -181,7 +183,7 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
 
             _carritoRepository.EliminarItemCarrito(carritoItem);
             carritoItem.Carrito.UpdatedAt = DateTime.UtcNow;
-            await _carritoRepository.GuardarCambiosAsync();
+            await _unidadDeTrabajo.GuardarCambiosAsync();
 
             return Result.Success();
         }
@@ -203,7 +205,7 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
 
             await _carritoRepository.VaciarCarritoItems(carrito.Id);
             carrito.UpdatedAt = DateTime.UtcNow;
-            await _carritoRepository.GuardarCambiosAsync();
+            await _unidadDeTrabajo.GuardarCambiosAsync();
 
             return Result.Success();
         }

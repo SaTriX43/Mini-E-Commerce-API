@@ -11,10 +11,9 @@ namespace Mini_E_Commerce_API.DALs.ProductoRepositoryCarpeta
             _context = context;
         }
 
-        public async Task<Producto> CrearProductoAsync(Producto producto)
+        public Producto CrearProducto(Producto producto)
         {
             _context.Productos.Add(producto);
-            await _context.SaveChangesAsync();
             return producto;
         }
         public async Task<bool> ExisteProductoConNombreEnCategoriaAsync(string productoNombre, int categoriaId, int? productoIdExcluir)
@@ -45,9 +44,6 @@ namespace Mini_E_Commerce_API.DALs.ProductoRepositoryCarpeta
             var productos = await _context.Productos.ToListAsync();
             return productos;
         }
-        public async Task GuardarCambiosAsync()
-        {
-            await _context.SaveChangesAsync();
-        }
+
     }
 }

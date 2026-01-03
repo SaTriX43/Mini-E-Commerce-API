@@ -22,10 +22,9 @@ namespace Mini_E_Commerce_API.DALs.UsuariorRepositoryCarpeta
                 .FirstOrDefaultAsync(u => u.Email == email);
         }
 
-        public async Task<Usuario> CrearAsync(Usuario usuario)
+        public Usuario Crear(Usuario usuario)
         {
             _context.Usuarios.Add(usuario);
-            await _context.SaveChangesAsync();
             return usuario;
         }
     }

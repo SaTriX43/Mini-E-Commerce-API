@@ -33,16 +33,10 @@ namespace Mini_E_Commerce_API.DALs.CategoriaRepositoryCarpeta
                );
         }
 
-        public async Task<Categoria> CrearCategoriaAsync(Categoria categoria)
+        public Categoria CrearCategoria(Categoria categoria)
         {
             _context.Categorias.Add(categoria);
-            await _context.SaveChangesAsync();
             return categoria;
-        }
-
-        public async Task GuardarCambiosAsync()
-        {
-            await _context.SaveChangesAsync();
         }
 
         public async Task<List<Categoria>> ObtenerCategoriasAsync(bool soloActivas)

@@ -57,9 +57,5 @@ namespace Mini_E_Commerce_API.DALs.CarritoRepositoryCarpeta
 
             _context.CarritoItems.RemoveRange(items);
         }
-        public async Task GuardarCambiosAsync()
-        {
-            await _context.SaveChangesAsync();
-        }
     }
 }
