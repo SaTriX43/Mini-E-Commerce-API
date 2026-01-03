@@ -99,5 +99,36 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
 
             return Result<OrdenDto>.Success(ordenDto);
         }
+        public async Task<Result<List<OrdenDto>>> ObtenerOrdenesAsync(int usuarioId)
+        {
+            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
+
+            if(usuario == null)
+            {
+                return Result<List<OrdenDto>>.Failure($"Su usuario con id = {usuarioId} no existe");
+            }
+
+            var ordenes = await _ordenRepository.ObtenerOrdenesPorUsuarioIdAsync(usuarioId);
+
+            var ordenesDto = ordenes.Select(o => new OrdenDto
+            {
+                Id = o.Id,
+                Status = o.Status,
+                TotalAmount = o.TotalAmount,
+                UserId = o.UserId,
+                CreatedAt = o.CreatedAt,
+                OrdenDetallesDtos = o.Detalles.Select(od => new OrdenDetallesDto
+                {
+                    Id = od.Id,
+                    OrderId = od.OrderId,
+                    ProductId = od.ProductId,
+                    Quantity = od.Quantity,
+                    Subtotal = od.Subtotal,
+                    UnitPrice = od.UnitPrice    
+                }).ToList(),
+            }).ToList();
+
+            return Result<List<OrdenDto>>.Success(ordenesDto);
+        }
     }
 }

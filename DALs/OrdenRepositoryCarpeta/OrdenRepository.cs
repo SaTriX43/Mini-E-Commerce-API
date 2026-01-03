@@ -1,4 +1,5 @@
-﻿using Mini_E_Commerce_API.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using Mini_E_Commerce_API.Models;
 
 namespace Mini_E_Commerce_API.DALs.OrdenRepositoryCarpeta
 {
@@ -14,6 +15,16 @@ namespace Mini_E_Commerce_API.DALs.OrdenRepositoryCarpeta
         {
             _context.Ordenes.Add(orden);
             return orden;
+        }
+
+        public async Task<List<Orden>> ObtenerOrdenesPorUsuarioIdAsync(int usuarioId)
+        {
+            var ordenes = await _context.Ordenes
+                .Include(o => o.Detalles)
+                .Where(o => o.UserId == usuarioId)
+                .ToListAsync();
+
+            return ordenes;
         }
     }
 }
