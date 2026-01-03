@@ -166,7 +166,7 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
             {
                 return Result.Failure($"Usuario con id = {usuarioId} no existe");
             }
-
+            
             var carritoItem = await _carritoRepository.ObtenerCarritoItemPorIdAsync(carritoItemId);
 
             if (carritoItem == null)
@@ -178,11 +178,36 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
                 return Result.Failure("No tiene permiso para eliminar este item");
             }
 
+
             _carritoRepository.EliminarItemCarrito(carritoItem);
+            carritoItem.Carrito.UpdatedAt = DateTime.UtcNow;
             await _carritoRepository.GuardarCambiosAsync();
 
             return Result.Success();
         }
+        public async Task<Result> VaciarCarritoAsync(int usuarioId)
+        {
+            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
+
+            if(usuario == null)
+            {
+                return Result.Failure($"Su usuario con id = {usuarioId} no existe");
+            }
+
+            var carrito = await _carritoRepository.ObtenerCarritoPorUsuarioIdAsync(usuarioId);
+
+            if(carrito == null)
+            {
+                return Result.Failure("Carrito no existe");
+            }
+
+            await _carritoRepository.VaciarCarritoItems(carrito.Id);
+            carrito.UpdatedAt = DateTime.UtcNow;
+            await _carritoRepository.GuardarCambiosAsync();
+
+            return Result.Success();
+        }
+
 
         private async Task<Result<ContextoCarritoDto>> ObtenerContextoCarritoAsync(int usuarioId, int productoId)
         {

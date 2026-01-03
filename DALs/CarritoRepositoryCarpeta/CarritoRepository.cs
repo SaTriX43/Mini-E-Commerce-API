@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Mini_E_Commerce_API.Models;
+using System.Threading.Tasks;
 
 namespace Mini_E_Commerce_API.DALs.CarritoRepositoryCarpeta
 {
@@ -48,6 +49,13 @@ namespace Mini_E_Commerce_API.DALs.CarritoRepositoryCarpeta
                 .Include(ci => ci.Carrito)
                 .FirstOrDefaultAsync(ci => ci.Id == carritoItemId);
             return carritoItem;
+        }
+
+        public async Task VaciarCarritoItems(int carritoId)
+        {
+            var items = await _context.CarritoItems.Where(ci => ci.CartId == carritoId).ToListAsync();
+
+            _context.CarritoItems.RemoveRange(items);
         }
         public async Task GuardarCambiosAsync()
         {

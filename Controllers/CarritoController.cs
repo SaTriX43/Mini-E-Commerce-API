@@ -153,5 +153,34 @@ namespace Mini_E_Commerce_API.Controllers
 
             return NoContent();
         }
+
+        [Authorize]
+        [HttpDelete("vaciar")]
+        public async Task<IActionResult> VaciarCarrito()
+        {
+            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "Su usuarioId debe de ser un numero"
+                });
+            }
+
+            var resultado = await _carritoService.VaciarCarritoAsync(usuarioId);
+
+            if (!resultado.IsSuccess)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = resultado.Error
+                });
+            }
+
+            return NoContent();
+        }
     }
 }
