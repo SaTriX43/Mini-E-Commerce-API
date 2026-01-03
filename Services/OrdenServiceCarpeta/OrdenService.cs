@@ -5,6 +5,7 @@ using Mini_E_Commerce_API.DALs.ProductoRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.UsuariorRepositoryCarpeta;
 using Mini_E_Commerce_API.DTOs.OrdenDtoCarpeta;
 using Mini_E_Commerce_API.Models;
+using Mini_E_Commerce_API.Models.Enums;
 using System.Linq.Expressions;
 
 namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
@@ -173,6 +174,43 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
 
 
             return Result<OrdenDto>.Success(ordenDto);
+        }
+        public async Task<Result> CancelarOrdenAsync(int ordenId, int usuarioId)
+        {
+            if (ordenId <= 0)
+            {
+                return Result.Failure("Su orden id no debe de ser menor o igual a 0");
+            }
+
+            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
+
+            if (usuario == null)
+            {
+                return Result.Failure($"Su usuario con id = {usuarioId} no existe");
+            }
+
+            var orden = await _ordenRepository.ObtenerOrdenPorOrdenIdAsync(ordenId);
+
+            if (orden == null || orden.UserId != usuarioId)
+            {
+                return Result.Failure($"Orden no existe");
+            }
+
+            if (orden.Status == StatusOrden.Cancelled)
+            {
+                return Result.Failure("La orden ya está cancelada");
+            }
+
+            if (orden.Status != StatusOrden.Pending)
+            {
+                return Result.Failure("La orden no se puede cancelar");
+            }
+
+
+            orden.Status = StatusOrden.Cancelled;
+            await _unidadDeTrabajo.GuardarCambiosAsync();
+
+            return Result.Success();
         }
 
     }

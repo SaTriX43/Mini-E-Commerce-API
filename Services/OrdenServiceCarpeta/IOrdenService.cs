@@ -10,5 +10,7 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
         public Task<Result<List<OrdenDto>>> ObtenerOrdenesAsync(int usuarioId);
 
         public Task<Result<OrdenDto>> ObtenerOrdenDetallesAsync(int ordenId, int usuarioId);
+
+        public Task<Result> CancelarOrdenAsync(int ordenId, int usuarioId);
     }
 }
