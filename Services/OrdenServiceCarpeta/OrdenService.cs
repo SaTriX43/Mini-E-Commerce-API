@@ -14,27 +14,17 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
     {
         private readonly IOrdenRepository _ordenRepository;
         private readonly ICarritoRepository _carritoRepository;
-        private readonly IUsuarioRepository _usuarioRepository;
         private readonly IUnidadDeTrabajo _unidadDeTrabajo;
-        private readonly IProductoRepository _productoRepository;
 
-        public OrdenService(IOrdenRepository ordenRepository, IUsuarioRepository usuarioRepository, IUnidadDeTrabajo unidadDeTrabajo, ICarritoRepository carritoRepository, IProductoRepository productoRepository) {
+        public OrdenService(IOrdenRepository ordenRepository, IUnidadDeTrabajo unidadDeTrabajo, ICarritoRepository carritoRepository) {
             _ordenRepository = ordenRepository;
-            _usuarioRepository = usuarioRepository;
             _unidadDeTrabajo = unidadDeTrabajo;
             _carritoRepository = carritoRepository;
-            _productoRepository = productoRepository;
         }
 
 
         public async Task<Result<OrdenDto>> CrearOrdenAsync(int usuarioId)
         {
-            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
-
-            if (usuario == null) {
-                return Result<OrdenDto>.Failure($"Su usuario con id {usuarioId} no existe");
-            }
-
             var carrito = await _carritoRepository.ObtenerCarritoPorUsuarioIdAsync(usuarioId);
 
             if (carrito == null) {
@@ -102,13 +92,6 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
         }
         public async Task<Result<List<OrdenDto>>> ObtenerOrdenesAsync(int usuarioId)
         {
-            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
-
-            if (usuario == null)
-            {
-                return Result<List<OrdenDto>>.Failure($"Su usuario con id = {usuarioId} no existe");
-            }
-
             var ordenes = await _ordenRepository.ObtenerOrdenesPorUsuarioIdAsync(usuarioId);
 
             var ordenesDto = ordenes.Select(o => new OrdenDto
@@ -138,16 +121,9 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
                 return Result<OrdenDto>.Failure("Su orden id no debe de ser menor o igual a 0");
             }
 
-            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
-
-            if (usuario == null)
-            {
-                return Result<OrdenDto>.Failure($"Su usuario con id = {usuarioId} no existe");
-            }
-
             var orden = await _ordenRepository.ObtenerOrdenPorOrdenIdAsync(ordenId);
 
-            if (orden == null || orden.UserId != usuarioId)
+            if (orden == null || orden.UserId != usuarioId )
             {
                 return Result<OrdenDto>.Failure($"Orden no existe");
             }
@@ -182,13 +158,6 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
                 return Result.Failure("Su orden id no debe de ser menor o igual a 0");
             }
 
-            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
-
-            if (usuario == null)
-            {
-                return Result.Failure($"Su usuario con id = {usuarioId} no existe");
-            }
-
             var orden = await _ordenRepository.ObtenerOrdenPorOrdenIdAsync(ordenId);
 
             if (orden == null || orden.UserId != usuarioId)
@@ -211,6 +180,30 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
             await _unidadDeTrabajo.GuardarCambiosAsync();
 
             return Result.Success();
+        }
+        public async Task<Result<List<OrdenDto>>> ObtenerTodasLasOrdenesAsync()
+        {
+            var ordenes = await _ordenRepository.ObtenerTodasLasOrdenesAsync();
+
+            var ordenesDto = ordenes.Select(o => new OrdenDto
+            {
+                Id = o.Id,
+                Status = o.Status,
+                TotalAmount = o.TotalAmount,
+                UserId = o.UserId,
+                CreatedAt = o.CreatedAt,
+                OrdenDetallesDtos = o.Detalles.Select(od => new OrdenDetallesDto
+                {
+                    Id = od.Id,
+                    OrderId = od.OrderId,
+                    ProductId = od.ProductId,
+                    Quantity = od.Quantity,
+                    Subtotal = od.Subtotal,
+                    UnitPrice = od.UnitPrice
+                }).ToList(),
+            }).ToList();
+
+            return Result<List<OrdenDto>>.Success(ordenesDto);
         }
 
     }
