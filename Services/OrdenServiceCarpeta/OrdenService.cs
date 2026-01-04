@@ -249,5 +249,42 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
 
             return Result<List<OrdenDto>>.Success(ordenesDto);
         }
+        public async Task<Result<OrdenDto>> ObtenerOrdenDetallesUsuarioAdminAsync(int ordenId)
+        {
+            if (ordenId <= 0)
+            {
+                return Result<OrdenDto>.Failure("Su orden id no debe de ser menor o igual a 0");
+            }
+
+            var orden = await _ordenRepository.ObtenerOrdenPorOrdenIdAsync(ordenId);
+
+            if (orden == null)
+            {
+                return Result<OrdenDto>.Failure($"Orden no existe");
+            }
+
+
+            var ordenDto = new OrdenDto
+            {
+                UserId = orden.UserId,
+                CreatedAt = orden.CreatedAt,
+                Id = ordenId,
+                Status = orden.Status,
+                TotalAmount = orden.TotalAmount,
+                OrdenDetallesDtos = orden.Detalles.Select(od => new OrdenDetallesDto
+                {
+                    Id = od.Id,
+                    OrderId = od.OrderId,
+                    ProductId = od.ProductId,
+                    Quantity = od.Quantity,
+                    Subtotal = od.Subtotal,
+                    UnitPrice = od.UnitPrice
+                }).ToList()
+            };
+
+
+
+            return Result<OrdenDto>.Success(ordenDto);
+        }
     }
 }

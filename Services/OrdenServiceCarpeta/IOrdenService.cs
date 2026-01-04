@@ -15,7 +15,7 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
         //admin
 
         public Task<Result<List<OrdenDto>>> ObtenerTodasLasOrdenesAsync();
-
         public Task<Result<List<OrdenDto>>> ObtenerOrdenesPorUsuarioAdminAsync(int usuarioId);
+        public Task<Result<OrdenDto>> ObtenerOrdenDetallesUsuarioAdminAsync(int ordenId);
     }
 }

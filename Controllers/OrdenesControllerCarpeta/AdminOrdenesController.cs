@@ -59,5 +59,28 @@ namespace Mini_E_Commerce_API.Controllers.OrdenesControllerCarpeta
                 value = ordenes.Value
             });
         }
+
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("orden-detalles/{ordenId}")]
+        public async Task<IActionResult> ObtenerOrdenDetallesPorId(int ordenId)
+        {
+            var ordenes = await _ordenService.ObtenerOrdenDetallesUsuarioAdminAsync(ordenId);
+
+            if (!ordenes.IsSuccess)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = ordenes.Error
+                });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                value = ordenes.Value
+            });
+        }
     }
 }
