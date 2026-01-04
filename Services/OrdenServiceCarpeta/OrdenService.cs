@@ -14,14 +14,18 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
     {
         private readonly IOrdenRepository _ordenRepository;
         private readonly ICarritoRepository _carritoRepository;
+        private readonly IUsuarioRepository _usuarioRepository;
         private readonly IUnidadDeTrabajo _unidadDeTrabajo;
 
-        public OrdenService(IOrdenRepository ordenRepository, IUnidadDeTrabajo unidadDeTrabajo, ICarritoRepository carritoRepository) {
+        public OrdenService(IOrdenRepository ordenRepository, IUnidadDeTrabajo unidadDeTrabajo, ICarritoRepository carritoRepository, IUsuarioRepository usuarioRepository) {
             _ordenRepository = ordenRepository;
             _unidadDeTrabajo = unidadDeTrabajo;
             _carritoRepository = carritoRepository;
+            _usuarioRepository = usuarioRepository;
         }
 
+
+        //USUARIO
 
         public async Task<Result<OrdenDto>> CrearOrdenAsync(int usuarioId)
         {
@@ -90,7 +94,7 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
 
             return Result<OrdenDto>.Success(ordenDto);
         }
-        public async Task<Result<List<OrdenDto>>> ObtenerOrdenesAsync(int usuarioId)
+        public async Task<Result<List<OrdenDto>>> ObtenerOrdenesUsuarioAsync(int usuarioId)
         {
             var ordenes = await _ordenRepository.ObtenerOrdenesPorUsuarioIdAsync(usuarioId);
 
@@ -114,7 +118,7 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
 
             return Result<List<OrdenDto>>.Success(ordenesDto);
         }
-        public async Task<Result<OrdenDto>> ObtenerOrdenDetallesAsync(int ordenId, int usuarioId)
+        public async Task<Result<OrdenDto>> ObtenerOrdenDetallesUsuarioAsync(int ordenId, int usuarioId)
         {
             if (ordenId <= 0)
             {
@@ -181,6 +185,10 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
 
             return Result.Success();
         }
+
+
+
+        //ADMIN
         public async Task<Result<List<OrdenDto>>> ObtenerTodasLasOrdenesAsync()
         {
             var ordenes = await _ordenRepository.ObtenerTodasLasOrdenesAsync();
@@ -205,6 +213,41 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
 
             return Result<List<OrdenDto>>.Success(ordenesDto);
         }
+        public async Task<Result<List<OrdenDto>>> ObtenerOrdenesPorUsuarioAdminAsync(int usuarioId)
+        {
+            if(usuarioId <= 0)
+            {
+                return Result<List<OrdenDto>>.Failure("El usuarioId no debe ser menor o igual a 0");
+            }
 
+            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
+
+            if(usuario == null)
+            {
+                return Result<List<OrdenDto>>.Failure($"Usuario con id = {usuarioId} no existe");
+            }
+
+            var ordenes = await _ordenRepository.ObtenerOrdenesPorUsuarioIdAsync(usuarioId);
+
+            var ordenesDto = ordenes.Select(o => new OrdenDto
+            {
+                Id = o.Id,
+                Status = o.Status,
+                TotalAmount = o.TotalAmount,
+                UserId = o.UserId,
+                CreatedAt = o.CreatedAt,
+                OrdenDetallesDtos = o.Detalles.Select(od => new OrdenDetallesDto
+                {
+                    Id = od.Id,
+                    OrderId = od.OrderId,
+                    ProductId = od.ProductId,
+                    Quantity = od.Quantity,
+                    Subtotal = od.Subtotal,
+                    UnitPrice = od.UnitPrice
+                }).ToList(),
+            }).ToList();
+
+            return Result<List<OrdenDto>>.Success(ordenesDto);
+        }
     }
 }

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Mini_E_Commerce_API.Services.OrdenServiceCarpeta;
 using System.Security.Claims;
 
-namespace Mini_E_Commerce_API.Controllers
+namespace Mini_E_Commerce_API.Controllers.OrdenesControllerCarpeta
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -64,7 +64,7 @@ namespace Mini_E_Commerce_API.Controllers
                 });
             }
 
-            var ordenes = await _ordenService.ObtenerOrdenesAsync(usuarioId);
+            var ordenes = await _ordenService.ObtenerOrdenesUsuarioAsync(usuarioId);
 
             if (!ordenes.IsSuccess)
             {
@@ -97,7 +97,7 @@ namespace Mini_E_Commerce_API.Controllers
                 });
             }
 
-            var ordenDetalles = await _ordenService.ObtenerOrdenDetallesAsync(ordenId,usuarioId);
+            var ordenDetalles = await _ordenService.ObtenerOrdenDetallesUsuarioAsync(ordenId,usuarioId);
 
             if (!ordenDetalles.IsSuccess)
             {
@@ -144,26 +144,6 @@ namespace Mini_E_Commerce_API.Controllers
             return NoContent();
         }
 
-        [Authorize(Roles = "Admin")]
-        [HttpGet("todas")]
-        public async Task<IActionResult> ObtenerTodasLasOrdenes()
-        {
-            var ordenes = await _ordenService.ObtenerTodasLasOrdenesAsync();
-
-            if (!ordenes.IsSuccess)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = ordenes.Error
-                });
-            }
-
-            return Ok(new
-            {
-                success = true,
-                value = ordenes.Value
-            });
-        }
+       
     }
 }
