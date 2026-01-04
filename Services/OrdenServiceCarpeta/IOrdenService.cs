@@ -10,7 +10,7 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
         public Task<Result<List<OrdenDto>>> ObtenerOrdenesUsuarioAsync(int usuarioId);
         public Task<Result<OrdenDto>> ObtenerOrdenDetallesUsuarioAsync(int ordenId, int usuarioId);
         public Task<Result> CancelarOrdenAsync(int ordenId, int usuarioId);
-
+        public Task<Result> PagarOrdenAsync(int ordenId, int usuarioId);
 
         //admin
 

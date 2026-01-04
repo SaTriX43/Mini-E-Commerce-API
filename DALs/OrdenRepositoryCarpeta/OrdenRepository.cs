@@ -33,6 +33,15 @@ namespace Mini_E_Commerce_API.DALs.OrdenRepositoryCarpeta
                 .FirstOrDefaultAsync(o => o.Id == ordenId);
             return orden;
         }
+
+        public async Task<Orden?> ObtenerOrdenParaPagoAsync(int ordenId)
+        {
+            var orden = await _context.Ordenes
+                .Include(o => o.Detalles)
+                    .ThenInclude(od => od.Producto)
+                .FirstOrDefaultAsync(o => o.Id == ordenId);
+            return orden;
+        }
         public async Task<List<Orden>> ObtenerTodasLasOrdenesAsync()
         {
             var ordenes = await _context.Ordenes

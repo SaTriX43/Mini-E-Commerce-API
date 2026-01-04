@@ -185,7 +185,57 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
 
             return Result.Success();
         }
+        public async Task<Result> PagarOrdenAsync(int ordenId, int usuarioId)
+        {
+            if (ordenId <= 0)
+            {
+                return Result.Failure("El ordenId no puede ser menor o igual a 0");
+            }
 
+            var orden = await _ordenRepository.ObtenerOrdenParaPagoAsync(ordenId);
+
+            if(orden == null)
+            {
+                return Result.Failure("Orden no existe");
+            }
+
+            if(orden.UserId != usuarioId)
+            {
+                return Result.Failure("Orden no existe");
+            }
+
+            if(orden.Status != StatusOrden.Pending)
+            {
+                return Result.Failure("No se pudo realizar esta accion");
+            }
+
+            foreach(var detalle in orden.Detalles)
+            {
+               if(detalle.Producto.Stock < detalle.Quantity)
+                {
+                    return Result.Failure($"Su producto con id = {detalle.ProductId} no tiene suficiente stock");
+                }
+            }
+
+            foreach (var detalle in orden.Detalles)
+            {
+                detalle.Producto.Stock -= detalle.Quantity;
+            }
+
+            var carrito = await _carritoRepository.ObtenerCarritoPorUsuarioIdAsync(usuarioId);
+
+            if (carrito != null)
+            {
+                await _carritoRepository.VaciarCarritoItems(carrito.Id);
+                carrito.UpdatedAt = DateTime.UtcNow;
+            }
+            
+            orden.Status = StatusOrden.Paid;
+
+            await _unidadDeTrabajo.GuardarCambiosAsync();
+
+            return Result.Success();
+        }
 
 
         //ADMIN

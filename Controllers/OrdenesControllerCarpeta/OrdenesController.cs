@@ -144,6 +144,33 @@ namespace Mini_E_Commerce_API.Controllers.OrdenesControllerCarpeta
             return NoContent();
         }
 
-       
+        [Authorize]
+        [HttpPost("pagar/{ordenId}")]
+        public async Task<IActionResult> PagarOrden(int ordenId)
+        {
+            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(usuarioIdClaim, out int usuarioId))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = "Su usuario id debe de ser un numero"
+                });
+            }
+
+            var resultado = await _ordenService.PagarOrdenAsync(ordenId, usuarioId);
+
+            if (!resultado.IsSuccess)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    error = resultado.Error
+                });
+            }
+
+            return NoContent();
+        }
     }
 }
