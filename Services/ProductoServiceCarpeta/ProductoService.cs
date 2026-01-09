@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Mini_E_Commerce_API.DALs;
 using Mini_E_Commerce_API.DALs.CategoriaRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.ProductoRepositoryCarpeta;
@@ -15,13 +16,20 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
         private readonly ICategoriaRepository _categoriaRepository;
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly IUnidadDeTrabajo _unidadDeTrabajo;
+        private readonly IMemoryCache _memoryCache;
+        private readonly ILogger<ProductoService> _logger;
+        private readonly IConfiguration _configuration;
+        private const string ProductosListCacheKey = "products:list";
 
-        public ProductoService(IProductoRepository productoRepository, IUsuarioRepository usuarioRepository, ICategoriaRepository categoriaRepository, IUnidadDeTrabajo unidadDeTrabajo)
+        public ProductoService(IProductoRepository productoRepository, IUsuarioRepository usuarioRepository, ICategoriaRepository categoriaRepository, IUnidadDeTrabajo unidadDeTrabajo,IMemoryCache memoryCache, ILogger<ProductoService> logger, IConfiguration configuration)
         {
             _productoRepository = productoRepository;
             _usuarioRepository = usuarioRepository;
             _categoriaRepository = categoriaRepository;
             _unidadDeTrabajo = unidadDeTrabajo;
+            _memoryCache = memoryCache;
+            _logger = logger;
+            _configuration = configuration;
         }
 
         public async Task<Result<ProductoDto>> CrearProductoAsync(ProductoCrearDto productoCrearDto, int usuarioId, string rol)
@@ -99,6 +107,9 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
 
             await _unidadDeTrabajo.GuardarCambiosAsync();
 
+            _memoryCache.Remove(ProductosListCacheKey);
+            _logger.LogInformation("Se invalido cache");
+
             return Result<ProductoDto>.Success( productoDto );
         }
 
@@ -147,6 +158,14 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
                 return Result<List<ProductoDto>>.Failure($"Su usuario con id = {usuarioId} no existe");
             }
 
+            if(_memoryCache.TryGetValue(ProductosListCacheKey, out List<ProductoDto>? cached))
+            {
+                _logger.LogInformation("Productos by [CACHE]");
+                return Result<List<ProductoDto>>.Success(cached!);
+            }
+
+            _logger.LogInformation("Productos by [DB]");
+
             var productos = await _productoRepository.ObtenerProductosAsync();
 
             var productosDtos = productos.Select(p => new ProductoDto
@@ -161,6 +180,17 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
                 Stock = p.Stock,
                 UpdatedAt = p.UpdatedAt,
             }).ToList();
+
+            int duracionCache = _configuration.GetValue<int>(
+                "ConfigCache:DuracionCacheSegundos"
+            );
+
+            var options = new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(duracionCache)
+            };
+
+            _memoryCache.Set(ProductosListCacheKey, productosDtos,options);
 
             return Result<List<ProductoDto>>.Success(productosDtos);
         }
@@ -205,7 +235,8 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             productoEncontrado.UpdatedAt = DateTime.UtcNow;
 
             await _unidadDeTrabajo.GuardarCambiosAsync();
-
+            _memoryCache.Remove(ProductosListCacheKey);
+            _logger.LogInformation("Se invalido cache");
             return Result.Success();
         }
         public async Task<Result> EliminarProductoAsync(int usuarioId, int productoId)
@@ -239,7 +270,8 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             productoEncontrado.UpdatedAt = DateTime.UtcNow;
 
             await _unidadDeTrabajo.GuardarCambiosAsync();
-
+            _memoryCache.Remove(ProductosListCacheKey);
+            _logger.LogInformation("Se invalido cache");
             return Result.Success();
         }
         public async Task<Result> ActualizarProductoAsync(int usuarioId,int productoId, ProductoActualizarDto productoActualizarDto)
@@ -300,7 +332,8 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             producto.UpdatedAt = DateTime.UtcNow;
 
             await _unidadDeTrabajo.GuardarCambiosAsync();
-
+            _memoryCache.Remove(ProductosListCacheKey);
+            _logger.LogInformation("Se invalido cache");
             return Result.Success();
         }
     }

@@ -79,6 +79,8 @@ builder.Services.AddScoped<ICarritoRepository, CarritoRepository>();
 builder.Services.AddScoped<IOrdenService, OrdenService>();
 builder.Services.AddScoped<IOrdenRepository,OrdenRepository>();
 
+builder.Services.AddMemoryCache();
+
 builder.Services.AddScoped<IUnidadDeTrabajo, UnidadDeTrabajo>();
 var app = builder.Build();
 

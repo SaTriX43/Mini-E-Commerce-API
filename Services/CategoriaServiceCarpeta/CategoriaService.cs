@@ -1,4 +1,5 @@
-﻿using Mini_E_Commerce_API.DALs;
+﻿using Microsoft.Extensions.Caching.Memory;
+using Mini_E_Commerce_API.DALs;
 using Mini_E_Commerce_API.DALs.CategoriaRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.UsuariorRepositoryCarpeta;
 using Mini_E_Commerce_API.DTOs.CategoriaDtoCarpeta;
@@ -12,11 +13,18 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
         private readonly ICategoriaRepository _categoriaRepository;
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly IUnidadDeTrabajo _unidadDeTrabajo;
+        private readonly IConfiguration _configuration;
+        private readonly ILogger<CategoriaService> _logger;
+        private readonly IMemoryCache _memoryCache;
+        private const string CategoriasListCacheKey = "categorias:key";
 
-        public CategoriaService(ICategoriaRepository categoriaRepository, IUsuarioRepository usuarioRepository, IUnidadDeTrabajo unidadDeTrabajo) { 
+        public CategoriaService(ICategoriaRepository categoriaRepository, IUsuarioRepository usuarioRepository, IUnidadDeTrabajo unidadDeTrabajo, IConfiguration configuration, ILogger<CategoriaService> logger, IMemoryCache memoryCache) { 
             _categoriaRepository = categoriaRepository;
             _usuarioRepository = usuarioRepository;
             _unidadDeTrabajo = unidadDeTrabajo;
+            _configuration = configuration;
+            _logger = logger;
+            _memoryCache = memoryCache;
         }
 
         public async Task<Result<CategoriaDto>> CrearCategoriaAsync(CategoriaCrearDto categoriaDto, int usuarioId)
@@ -55,6 +63,7 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
             };
 
             await _unidadDeTrabajo.GuardarCambiosAsync();
+            _memoryCache.Remove(CategoriasListCacheKey);
             return Result<CategoriaDto>.Success(categoriaCreadaDto);
         }
         public async Task<Result> ActualizarCategoriaAsync(
@@ -92,6 +101,7 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
             categoria.Description = dto.Description;
 
             await _unidadDeTrabajo.GuardarCambiosAsync();
+            _memoryCache.Remove(CategoriasListCacheKey);
 
             return Result.Success();
         }
@@ -119,6 +129,8 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
 
             await _unidadDeTrabajo.GuardarCambiosAsync();
 
+            _memoryCache.Remove(CategoriasListCacheKey);
+
             return Result.Success();
         }
 
@@ -130,6 +142,12 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
 
             bool soloActivas = usuario.Rol != RolUsuario.Admin;
 
+            if(_memoryCache.TryGetValue(CategoriasListCacheKey, out List<CategoriaDto>? cached))
+            {
+                _logger.LogInformation("Categorias de [CACHE]");
+                return Result<List<CategoriaDto>>.Success(cached!);
+            }
+
             var categorias = await _categoriaRepository.ObtenerCategoriasAsync(soloActivas);
 
             var dto = categorias.Select(c => new CategoriaDto
@@ -139,6 +157,15 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
                 Description = c.Description,
                 IsActive = c.IsActive
             }).ToList();
+
+            var segundoExpiracionCategoriaCache = _configuration.GetValue<int>("ConfigCache:DuracionCacheSegundos");
+
+            var options = new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(segundoExpiracionCategoriaCache)
+            };
+
+            _memoryCache.Set(CategoriasListCacheKey, dto, options);
 
             return Result<List<CategoriaDto>>.Success(dto);
         }
