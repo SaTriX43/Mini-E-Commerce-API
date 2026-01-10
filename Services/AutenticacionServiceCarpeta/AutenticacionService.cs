@@ -17,18 +17,22 @@ public class AutenticacionService : IAutenticacionService
     private readonly IUsuarioRepository _usuarioRepository;
     private readonly IConfiguration _configuration;
     private readonly IUnidadDeTrabajo _unidadDeTrabajo;
+    private readonly ILogger<AutenticacionService> _logger;
 
     public AutenticacionService(
         IRefreshTokenRepository refreshTokenRepository,
         IConfiguration configuration,
         IUsuarioRepository usuarioRepository,
-        IUnidadDeTrabajo unidadDeTrabajo
+        IUnidadDeTrabajo unidadDeTrabajo,
+        ILogger<AutenticacionService> logger
+
         )
     {
         _refreshTokenRepository = refreshTokenRepository;
         _configuration = configuration;
         _usuarioRepository = usuarioRepository;
         _unidadDeTrabajo = unidadDeTrabajo;
+        _logger = logger;
     }
 
     public async Task<Result<AutenticacionResponseDto>> RegistrarAsync(RegistroRequestDto dto)
@@ -62,6 +66,13 @@ public class AutenticacionService : IAutenticacionService
 
         var refreshTokenCreado = _refreshTokenRepository.CrearRefreshTokenAsync(nuevoRefreshTokenModel);
         await _unidadDeTrabajo.GuardarCambiosAsync();
+
+        _logger.LogInformation(
+            "Usuario registrado exitosamente. UserId={UserId} Email={Email}",
+            usuarioCreado.Id,
+            usuarioCreado.Email
+        );
+
         return Result<AutenticacionResponseDto>.Success(new AutenticacionResponseDto
         {
             AccessToken = token,
@@ -77,7 +88,10 @@ public class AutenticacionService : IAutenticacionService
             return Result<AutenticacionResponseDto>.Failure("Credenciales inválidas");
 
         if (!BCrypt.Net.BCrypt.Verify(dto.Password, usuario.PasswordHash))
+        {
+            _logger.LogWarning("Usuario con Email {Email} fallo al iniciar sesion - credenciales invalidas", dto.Email);
             return Result<AutenticacionResponseDto>.Failure("Credenciales inválidas");
+        }
 
         var refreshTokenDiasExpiracion = _configuration.GetValue<int>("Jwt:RefreshTokenDays");
         var nuevoRefreshTokenModel = new RefreshToken
@@ -91,7 +105,7 @@ public class AutenticacionService : IAutenticacionService
         var token = GenerarJwt(usuario);
         var refreshTokenCreado = _refreshTokenRepository.CrearRefreshTokenAsync(nuevoRefreshTokenModel);
         await _unidadDeTrabajo.GuardarCambiosAsync();
-
+        _logger.LogInformation("Usuario con id = {UserId} se ha logeado", usuario.Id);
         return Result<AutenticacionResponseDto>.Success(new AutenticacionResponseDto
         {
             AccessToken = token,
@@ -102,28 +116,37 @@ public class AutenticacionService : IAutenticacionService
     {
         var tokenEncontrado = await _refreshTokenRepository.ObtenerRefreshTokenPorTokenAsync(token.Token);
 
+        var tokenTail = token.Token?.Length > 8
+            ? token.Token[^8..]
+            : token.Token;
+
         if (tokenEncontrado == null)
         {
+            _logger.LogWarning("Refresh token no existe. TokenTail={TokenTail}",tokenTail);
             return Result<AutenticacionResponseDto>.Failure("Su token no puede ser null");
         }
 
         if(tokenEncontrado.RevokedAt != null)
         {
+            _logger.LogWarning("Usuario con id {usuarioId} envio un token revocado", tokenEncontrado.UserId);
             return Result<AutenticacionResponseDto>.Failure("Su token fue revocado");
         }
 
         if (tokenEncontrado.ExpiresAt < DateTime.UtcNow)
         {
+            _logger.LogWarning("Usuario con id {usuarioId} envio un token expirado", tokenEncontrado.UserId);
             return Result<AutenticacionResponseDto>.Failure("Su token ya expiro");
         }
 
         if(tokenEncontrado.IsUsed)
         {
+            _logger.LogWarning("Usuario con id {usuarioId} envio un token usado", tokenEncontrado.UserId);
             return Result<AutenticacionResponseDto>.Failure("Su token ya fue usado");
         }
 
         if(tokenEncontrado.Usuario == null)
         {
+            _logger.LogWarning("No existe usuario asignado al token {tokenTail} ", tokenTail);
             return Result<AutenticacionResponseDto>.Failure("Su usuario debe de existir");
         }
 
@@ -146,6 +169,8 @@ public class AutenticacionService : IAutenticacionService
         var refreshTokenCreado = _refreshTokenRepository.CrearRefreshTokenAsync(nuevoRefreshTokenModel);
         await _unidadDeTrabajo.GuardarCambiosAsync();
 
+        _logger.LogInformation("Usuario con id = {usuarioId} renovo su resfrehToken correctamente",tokenEncontrado.UserId);
+
         return Result<AutenticacionResponseDto>.Success(new AutenticacionResponseDto
         {
             AccessToken = jwt,
@@ -155,36 +180,45 @@ public class AutenticacionService : IAutenticacionService
     public async Task<Result> Logout(RefreshTokenRenovarDto token)
     {
         var tokenEncontrado = await _refreshTokenRepository.ObtenerRefreshTokenPorTokenAsync(token.Token);
+        var tokenTail = token.Token?.Length > 8
+            ? token.Token[^8..]
+            : token.Token;
 
         if (tokenEncontrado == null)
         {
-            return Result<AutenticacionResponseDto>.Failure("Su token no puede ser null");
+            _logger.LogWarning("Refresh token no existe. TokenTail={TokenTail}", tokenTail);
+            return Result.Failure("Su token no puede ser null");
         }
 
         if (tokenEncontrado.RevokedAt != null)
         {
-            return Result<AutenticacionResponseDto>.Failure("Su token fue revocado");
+            _logger.LogWarning("Usuario con id {usuarioId} envio un token revocado", tokenEncontrado.UserId);
+            return Result.Failure("Su token fue revocado");
         }
 
         if (tokenEncontrado.ExpiresAt < DateTime.UtcNow)
         {
-            return Result<AutenticacionResponseDto>.Failure("Su token ya expiro");
+            _logger.LogWarning("Usuario con id {usuarioId} envio un token expirado", tokenEncontrado.UserId);
+            return Result.Failure("Su token ya expiro");
         }
 
         if (tokenEncontrado.IsUsed)
         {
-            return Result<AutenticacionResponseDto>.Failure("Su token ya fue usado");
+            _logger.LogWarning("Usuario con id {usuarioId} envio un token usado", tokenEncontrado.UserId);
+            return Result.Failure("Su token ya fue usado");
         }
 
         if (tokenEncontrado.Usuario == null)
         {
-            return Result<AutenticacionResponseDto>.Failure("Su usuario debe de existir");
+            _logger.LogWarning("No existe usuario asignado al token {tokenTail} ", tokenTail);
+            return Result.Failure("Su usuario debe de existir");
         }
 
         tokenEncontrado.IsUsed = true;
         tokenEncontrado.RevokedAt = DateTime.UtcNow;
 
         await _unidadDeTrabajo.GuardarCambiosAsync();
+        _logger.LogInformation("Usuario con id {usuarioId} se deslogeo",tokenEncontrado.UserId);
 
         return Result.Success();
     }

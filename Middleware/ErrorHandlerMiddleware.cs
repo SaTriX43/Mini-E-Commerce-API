@@ -31,10 +31,13 @@ namespace Mini_E_Commerce_API.Middleware
                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 context.Response.ContentType = "application/json";
 
+                var correlationId = context.Request.Headers["X-Correlation-Id"].FirstOrDefault();
+
                 var response = new
                 {
                     success = false,
-                    error = "An unexpected error occurred"
+                    error = "An unexpected error occurred",
+                    correlationId 
                 };
 
                 await context.Response.WriteAsync(

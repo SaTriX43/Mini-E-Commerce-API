@@ -13,12 +13,14 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly IProductoRepository _productoRepository;
         private readonly IUnidadDeTrabajo _unidadDeTrabajo;
+        private readonly ILogger<CarritoService> _logger;
 
-        public CarritoService(ICarritoRepository carritoRepository, IUsuarioRepository usuarioRepository, IProductoRepository productoRepository, IUnidadDeTrabajo unidadDeTrabajo) { 
+        public CarritoService(ICarritoRepository carritoRepository, IUsuarioRepository usuarioRepository, IProductoRepository productoRepository, IUnidadDeTrabajo unidadDeTrabajo,ILogger<CarritoService> logger) { 
             _carritoRepository = carritoRepository;
             _usuarioRepository = usuarioRepository;
             _productoRepository = productoRepository;
             _unidadDeTrabajo = unidadDeTrabajo;
+            _logger = logger;
         }
 
         public async Task<Result<CarritoDto>> ObtenerCarritoPorUsuarioIdAsync(int usuarioId)
@@ -91,6 +93,10 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
 
             if(item == null && itemAgregarDto.Quantity > producto.Stock)
             {
+                _logger.LogWarning(
+                   "User {UserId} intentó agregar producto {ProductId} quantity {Quantity} pero stock={Stock}",
+                   usuarioId, producto.Id, itemAgregarDto.Quantity, producto.Stock
+                );
                 return Result.Failure($"Su producto con id {itemAgregarDto.ProductId} no tiene suficiente stock");
             }
 
@@ -116,7 +122,10 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
             carrito.UpdatedAt = DateTime.UtcNow;
 
             await _unidadDeTrabajo.GuardarCambiosAsync();
-
+            _logger.LogInformation(
+               "User {UserId} agregó producto {ProductId} quantity {Quantity} al carrito {CartId}",
+               usuarioId, producto.Id, itemAgregarDto.Quantity, carrito.Id
+            );
             return Result.Success();
         }
         public async Task<Result> ActualizarCantidadCarritoItemAsync(CarritoItemAgregarDto itemAgregarDto, int usuarioId)
@@ -144,6 +153,7 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
             
             if (itemAgregarDto.Quantity > producto.Stock)
             {
+                _logger.LogWarning("usuario con id = {UserId} fallo al actualizar cantidad del item = {ProductId} ya que puso mas del stock actual",usuarioId,producto.Id);
                 return Result.Failure($"Su producto con id {itemAgregarDto.ProductId} no tiene suficiente stock");
             }
 
@@ -152,7 +162,7 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
             carrito.UpdatedAt = DateTime.UtcNow;
 
             await _unidadDeTrabajo.GuardarCambiosAsync();
-
+            _logger.LogInformation("usuario con id = {UserId} actualizó cantidad del item = {ProductId}",usuarioId,producto.Id);
             return Result.Success();
         }
         public async Task<Result> EliminarCarritoItemAsync(int carritoItemId, int usuarioId)
@@ -177,6 +187,7 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
             }
 
             if (carritoItem.Carrito.UserId != usuarioId) {
+                _logger.LogWarning("Usuario con id = {UserId} intento eliminar un item que no es suyo", usuarioId);
                 return Result.Failure("No tiene permiso para eliminar este item");
             }
 
@@ -184,7 +195,7 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
             _carritoRepository.EliminarItemCarrito(carritoItem);
             carritoItem.Carrito.UpdatedAt = DateTime.UtcNow;
             await _unidadDeTrabajo.GuardarCambiosAsync();
-
+            _logger.LogInformation("User {UserId} eliminó carritoItem {CarritoItemId}", usuarioId, carritoItemId);
             return Result.Success();
         }
         public async Task<Result> VaciarCarritoAsync(int usuarioId)
@@ -206,7 +217,7 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
             await _carritoRepository.VaciarCarritoItems(carrito.Id);
             carrito.UpdatedAt = DateTime.UtcNow;
             await _unidadDeTrabajo.GuardarCambiosAsync();
-
+            _logger.LogInformation("usuario con id {UserId} vació el carrito", usuarioId);
             return Result.Success();
         }
 

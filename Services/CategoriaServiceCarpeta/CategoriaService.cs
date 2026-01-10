@@ -18,7 +18,14 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
         private readonly IMemoryCache _memoryCache;
         private const string CategoriasListCacheKey = "categorias:key";
 
-        public CategoriaService(ICategoriaRepository categoriaRepository, IUsuarioRepository usuarioRepository, IUnidadDeTrabajo unidadDeTrabajo, IConfiguration configuration, ILogger<CategoriaService> logger, IMemoryCache memoryCache) { 
+        public CategoriaService(
+            ICategoriaRepository categoriaRepository,
+            IUsuarioRepository usuarioRepository,
+            IUnidadDeTrabajo unidadDeTrabajo,
+            IConfiguration configuration,
+            ILogger<CategoriaService> logger,
+            IMemoryCache memoryCache)
+        {
             _categoriaRepository = categoriaRepository;
             _usuarioRepository = usuarioRepository;
             _unidadDeTrabajo = unidadDeTrabajo;
@@ -32,14 +39,20 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
             var usuarioExiste = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
             if (usuarioExiste == null)
             {
+                _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId}",
+                    "CrearCategoria", "USUARIO_NO_EXISTE", usuarioId);
+
                 return Result<CategoriaDto>.Failure($"Usuario con id = {usuarioId} no existe");
             }
 
             var nombreCategoriaNormalizado = categoriaDto.Name.Trim().ToLower();
             var categoriaExiste = await _categoriaRepository.ExisteCategoriaConNombreAsync(categoriaDto.Name, null);
 
-            if(categoriaExiste)
+            if (categoriaExiste)
             {
+                _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} CategoriaNombre={CategoriaNombre}",
+                    "CrearCategoria", "NOMBRE_DUPLICADO", usuarioId, nombreCategoriaNormalizado);
+
                 return Result<CategoriaDto>.Failure("No pueden existir 2 categorias con el mismo nombre");
             }
 
@@ -53,6 +66,12 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
 
             var categoriaCreada = _categoriaRepository.CrearCategoria(categoriaModel);
 
+            await _unidadDeTrabajo.GuardarCambiosAsync();
+            _memoryCache.Remove(CategoriasListCacheKey);
+
+            _logger.LogInformation("Accion={Action} Resultado={Resultado} UserId={UserId} CategoriaId={CategoriaId}",
+                "CrearCategoria", "OK", usuarioId, categoriaCreada.Id);
+
             var categoriaCreadaDto = new CategoriaDto
             {
                 Id = categoriaCreada.Id,
@@ -62,32 +81,50 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
                 Name = categoriaCreada.Name,
             };
 
-            await _unidadDeTrabajo.GuardarCambiosAsync();
-            _memoryCache.Remove(CategoriasListCacheKey);
             return Result<CategoriaDto>.Success(categoriaCreadaDto);
         }
+
         public async Task<Result> ActualizarCategoriaAsync(
             CategoriaCrearDto dto,
             int categoriaId,
-            int usuarioId
-            )
+            int usuarioId)
         {
             if (categoriaId <= 0)
                 return Result.Failure("El categoriaId debe ser mayor a 0");
 
             var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
             if (usuario == null)
+            {
+                _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} CategoriaId={CategoriaId}",
+                    "ActualizarCategoria", "USUARIO_NO_EXISTE", usuarioId, categoriaId);
+
                 return Result.Failure($"El usuario con id {usuarioId} no existe");
+            }
 
             if (usuario.Rol != RolUsuario.Admin)
+            {
+                _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} CategoriaId={CategoriaId}",
+                    "ActualizarCategoria", "SIN_PERMISOS", usuarioId, categoriaId);
+
                 return Result.Failure("No tiene permisos para actualizar categorías");
+            }
 
             var categoria = await _categoriaRepository.ObtenerCategoriaPorIdAsync(categoriaId);
             if (categoria == null)
+            {
+                _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} CategoriaId={CategoriaId}",
+                    "ActualizarCategoria", "CATEGORIA_NO_EXISTE", usuarioId, categoriaId);
+
                 return Result.Failure($"La categoría con id {categoriaId} no existe");
+            }
 
             if (!categoria.IsActive)
+            {
+                _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} CategoriaId={CategoriaId}",
+                    "ActualizarCategoria", "CATEGORIA_INACTIVA", usuarioId, categoriaId);
+
                 return Result.Failure("No se puede actualizar una categoría eliminada");
+            }
 
             var nombreNormalizado = dto.Name.Trim().ToLower();
 
@@ -95,13 +132,21 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
                 .ExisteCategoriaConNombreAsync(nombreNormalizado, categoriaId);
 
             if (nombreExiste)
+            {
+                _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} CategoriaId={CategoriaId} CategoriaNombre={CategoriaNombre}",
+                    "ActualizarCategoria", "NOMBRE_DUPLICADO", usuarioId, categoriaId, nombreNormalizado);
+
                 return Result.Failure("Ya existe una categoría con ese nombre");
+            }
 
             categoria.Name = nombreNormalizado;
             categoria.Description = dto.Description;
 
             await _unidadDeTrabajo.GuardarCambiosAsync();
             _memoryCache.Remove(CategoriasListCacheKey);
+
+            _logger.LogInformation("Accion={Action} Resultado={Resultado} UserId={UserId} CategoriaId={CategoriaId}",
+                "ActualizarCategoria", "OK", usuarioId, categoriaId);
 
             return Result.Success();
         }
@@ -113,23 +158,45 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
 
             var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
             if (usuario == null)
+            {
+                _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} CategoriaId={CategoriaId}",
+                    "DesactivarCategoria", "USUARIO_NO_EXISTE", usuarioId, categoriaId);
+
                 return Result.Failure($"El usuario con id {usuarioId} no existe");
+            }
 
             if (usuario.Rol != RolUsuario.Admin)
+            {
+                _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} CategoriaId={CategoriaId}",
+                    "DesactivarCategoria", "SIN_PERMISOS", usuarioId, categoriaId);
+
                 return Result.Failure("No tiene permisos para desactivar categorías");
+            }
 
             var categoria = await _categoriaRepository.ObtenerCategoriaPorIdAsync(categoriaId);
             if (categoria == null)
+            {
+                _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} CategoriaId={CategoriaId}",
+                    "DesactivarCategoria", "CATEGORIA_NO_EXISTE", usuarioId, categoriaId);
+
                 return Result.Failure($"La categoría con id {categoriaId} no existe");
+            }
 
             if (!categoria.IsActive)
+            {
+                _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} CategoriaId={CategoriaId}",
+                    "DesactivarCategoria", "YA_INACTIVA", usuarioId, categoriaId);
+
                 return Result.Failure("La categoría ya se encuentra desactivada");
+            }
 
             categoria.IsActive = false;
 
             await _unidadDeTrabajo.GuardarCambiosAsync();
-
             _memoryCache.Remove(CategoriasListCacheKey);
+
+            _logger.LogInformation("Accion={Action} Resultado={Resultado} UserId={UserId} CategoriaId={CategoriaId}",
+                "DesactivarCategoria", "OK", usuarioId, categoriaId);
 
             return Result.Success();
         }
@@ -138,13 +205,20 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
         {
             var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
             if (usuario == null)
+            {
+                _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId}",
+                    "ObtenerCategorias", "USUARIO_NO_EXISTE", usuarioId);
+
                 return Result<List<CategoriaDto>>.Failure("El usuario no existe");
+            }
 
             bool soloActivas = usuario.Rol != RolUsuario.Admin;
 
-            if(_memoryCache.TryGetValue(CategoriasListCacheKey, out List<CategoriaDto>? cached))
+            if (_memoryCache.TryGetValue(CategoriasListCacheKey, out List<CategoriaDto>? cached))
             {
-                _logger.LogInformation("Categorias de [CACHE]");
+                _logger.LogInformation("Accion={Action} Resultado={Resultado} UserId={UserId}",
+                    "ObtenerCategorias", "CACHE", usuarioId);
+
                 return Result<List<CategoriaDto>>.Success(cached!);
             }
 
@@ -167,8 +241,10 @@ namespace Mini_E_Commerce_API.Services.CategoriaServiceCarpeta
 
             _memoryCache.Set(CategoriasListCacheKey, dto, options);
 
+            _logger.LogInformation("Accion={Action} Resultado={Resultado} UserId={UserId}",
+                "ObtenerCategorias", "BD", usuarioId);
+
             return Result<List<CategoriaDto>>.Success(dto);
         }
     }
 }
-
