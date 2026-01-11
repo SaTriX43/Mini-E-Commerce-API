@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Mini_E_Commerce_API.DTOs;
 using Mini_E_Commerce_API.DTOs.ProductoDtoCarpeta;
 using Mini_E_Commerce_API.Models.Enums;
 using Mini_E_Commerce_API.Services.ProductoServiceCarpeta;
@@ -61,6 +62,9 @@ namespace Mini_E_Commerce_API.Controllers
             });
         }
 
+        [ProducesResponseType(typeof(ApiResponseDto<ProductoDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponseDto<object>),StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponseDto<object>),StatusCodes.Status404NotFound)]
         [Authorize]
         [HttpGet("obtener/{productoId}")]
         public async Task<IActionResult> ObtenerProductoPorId(int productoId)
@@ -69,10 +73,10 @@ namespace Mini_E_Commerce_API.Controllers
 
             if (!int.TryParse(usuarioIdClaim, out var usuarioId))
             {
-                return BadRequest(new
+                return BadRequest(new ApiResponseDto<object>
                 {
-                    success = false,
-                    error = "Su usuarioId debe de ser un numero"
+                    Success = false,
+                    Error = "Su usuarioId debe de ser un numero"
                 });
             }
 
@@ -80,17 +84,25 @@ namespace Mini_E_Commerce_API.Controllers
 
             if(!producto.IsSuccess)
             {
-                return BadRequest(new
+                if(producto.Error.Contains("no existe"))
                 {
-                    success = false,
-                    error = producto.Error
+                    return NotFound(new ApiResponseDto<object>
+                    {
+                        Success = false,
+                        Error = producto.Error
+                    });
+                }
+                return BadRequest(new ApiResponseDto<object>
+                {
+                    Success = false,
+                    Error = producto.Error
                 });
             }
 
-            return Ok(new
+            return Ok(new ApiResponseDto<ProductoDto>
             {
-                success = true,
-                valor = producto.Value
+                Success = true,
+                Value = producto.Value
             });
         }
 
