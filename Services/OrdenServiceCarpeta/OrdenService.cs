@@ -1,4 +1,5 @@
-﻿using Mini_E_Commerce_API.Common.Results;
+﻿using Mini_E_Commerce_API.Common.Errors;
+using Mini_E_Commerce_API.Common.Results;
 using Mini_E_Commerce_API.DALs;
 using Mini_E_Commerce_API.DALs.CarritoRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.OrdenRepositoryCarpeta;
@@ -19,7 +20,12 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
         private readonly IUnidadDeTrabajo _unidadDeTrabajo;
         private readonly ILogger<OrdenService> _logger;
 
-        public OrdenService(IOrdenRepository ordenRepository, IUnidadDeTrabajo unidadDeTrabajo, ICarritoRepository carritoRepository, IUsuarioRepository usuarioRepository, ILogger<OrdenService> logger)
+        public OrdenService(
+            IOrdenRepository ordenRepository,
+            IUnidadDeTrabajo unidadDeTrabajo,
+            ICarritoRepository carritoRepository,
+            IUsuarioRepository usuarioRepository,
+            ILogger<OrdenService> logger)
         {
             _ordenRepository = ordenRepository;
             _unidadDeTrabajo = unidadDeTrabajo;
@@ -27,7 +33,6 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
             _usuarioRepository = usuarioRepository;
             _logger = logger;
         }
-
 
         //USUARIO
 
@@ -38,30 +43,30 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
             if (carrito == null)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId}", "CrearOrden", "CARRITO_NO_EXISTE", usuarioId);
-                return Result<OrdenDto>.Failure("Carrito no existe");
+                return Result<OrdenDto>.Failure(DomainErrors.Cart.NotFound);
             }
 
             if (carrito.Items.Count == 0)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} CartId={CartId}", "CrearOrden", "CARRITO_VACIO", usuarioId, carrito.Id);
-                return Result<OrdenDto>.Failure("No se pudo crear orden si no hay items en carrito");
+                return Result<OrdenDto>.Failure(DomainErrors.Order.EmptyCart);
             }
 
             decimal montoTotal = 0;
 
             foreach (var item in carrito.Items)
             {
-
                 if (item.Producto == null || !item.Producto.IsActive)
                 {
                     _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} CartId={CartId} ProductId={ProductId}", "CrearOrden", "PRODUCTO_INACTIVO_O_NULO", usuarioId, carrito.Id, item.ProductId);
-                    return Result<OrdenDto>.Failure($"No se pudo crear orden por, Producto con id {item.ProductId} nullo o inactivo");
+
+                    return Result<OrdenDto>.Failure(DomainErrors.Product.NotFound(item.ProductId));
                 }
 
                 if (item.Quatity > item.Producto.Stock)
                 {
                     _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} CartId={CartId} ProductId={ProductId}", "CrearOrden", "STOCK_INSUFICIENTE", usuarioId, carrito.Id, item.ProductId);
-                    return Result<OrdenDto>.Failure($"No se pudo crear orden por, Producto con id {item.ProductId} no tiene suficiente stock");
+                    return Result<OrdenDto>.Failure(DomainErrors.Product.InssuficientStock(item.ProductId));
                 }
 
                 montoTotal += item.Quatity * item.Producto.Price;
@@ -108,6 +113,7 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
 
             return Result<OrdenDto>.Success(ordenDto);
         }
+
         public async Task<Result<List<OrdenDto>>> ObtenerOrdenesUsuarioAsync(int usuarioId)
         {
             var ordenes = await _ordenRepository.ObtenerOrdenesPorUsuarioIdAsync(usuarioId);
@@ -132,11 +138,12 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
 
             return Result<List<OrdenDto>>.Success(ordenesDto);
         }
+
         public async Task<Result<OrdenDto>> ObtenerOrdenDetallesUsuarioAsync(int ordenId, int usuarioId)
         {
             if (ordenId <= 0)
             {
-                return Result<OrdenDto>.Failure("Su orden id no debe de ser menor o igual a 0");
+                return Result<OrdenDto>.Failure(DomainErrors.Order.InvalidId);
             }
 
             var orden = await _ordenRepository.ObtenerOrdenPorOrdenIdAsync(ordenId);
@@ -144,9 +151,8 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
             if (orden == null || orden.UserId != usuarioId)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} OrderId={OrderId}", "ObtenerOrdenDetalle", "ORDEN_NO_EXISTE_O_NO_PERTENECE", usuarioId, ordenId);
-                return Result<OrdenDto>.Failure($"Orden no existe");
+                return Result<OrdenDto>.Failure(DomainErrors.Order.NotFound);
             }
-
 
             var ordenDto = new OrdenDto
             {
@@ -166,15 +172,14 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
                 }).ToList()
             };
 
-
-
             return Result<OrdenDto>.Success(ordenDto);
         }
+
         public async Task<Result> CancelarOrdenAsync(int ordenId, int usuarioId)
         {
             if (ordenId <= 0)
             {
-                return Result.Failure("Su orden id no debe de ser menor o igual a 0");
+                return Result.Failure(DomainErrors.Order.InvalidId);
             }
 
             var orden = await _ordenRepository.ObtenerOrdenPorOrdenIdAsync(ordenId);
@@ -182,21 +187,20 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
             if (orden == null || orden.UserId != usuarioId)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} OrderId={OrderId}", "CancelarOrden", "ORDEN_NO_EXISTE_O_NO_PERTENECE", usuarioId, ordenId);
-                return Result.Failure($"Orden no existe");
+                return Result.Failure(DomainErrors.Order.NotFound);
             }
 
             if (orden.Status == StatusOrden.Cancelled)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} OrderId={OrderId}", "CancelarOrden", "YA_CANCELADA", usuarioId, ordenId);
-                return Result.Failure("La orden ya está cancelada");
+                return Result.Failure(DomainErrors.Order.AlreadyCancelled);
             }
 
             if (orden.Status != StatusOrden.Pending)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} OrderId={OrderId}", "CancelarOrden", "ESTADO_INVALIDO", usuarioId, ordenId);
-                return Result.Failure("La orden no se puede cancelar");
+                return Result.Failure(DomainErrors.Order.InvalidStatusToCancel);
             }
-
 
             orden.Status = StatusOrden.Cancelled;
             await _unidadDeTrabajo.GuardarCambiosAsync();
@@ -205,11 +209,12 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
 
             return Result.Success();
         }
+
         public async Task<Result> PagarOrdenAsync(int ordenId, int usuarioId)
         {
             if (ordenId <= 0)
             {
-                return Result.Failure("El ordenId no puede ser menor o igual a 0");
+                return Result.Failure(DomainErrors.Order.InvalidId);
             }
 
             var orden = await _ordenRepository.ObtenerOrdenParaPagoAsync(ordenId);
@@ -217,19 +222,19 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
             if (orden == null)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} OrderId={OrderId}", "PagarOrden", "ORDEN_NO_EXISTE", usuarioId, ordenId);
-                return Result.Failure("Orden no existe");
+                return Result.Failure(DomainErrors.Order.NotFound);
             }
 
             if (orden.UserId != usuarioId)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} OrderId={OrderId}", "PagarOrden", "ORDEN_NO_PERTENECE", usuarioId, ordenId);
-                return Result.Failure("Orden no existe");
+                return Result.Failure(DomainErrors.Order.NotFound);
             }
 
             if (orden.Status != StatusOrden.Pending)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} OrderId={OrderId}", "PagarOrden", "ESTADO_INVALIDO", usuarioId, ordenId);
-                return Result.Failure("No se pudo realizar esta accion");
+                return Result.Failure(DomainErrors.Order.InvalidStatusAction);
             }
 
             foreach (var detalle in orden.Detalles)
@@ -237,7 +242,7 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
                 if (detalle.Producto.Stock < detalle.Quantity)
                 {
                     _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} OrderId={OrderId} ProductId={ProductId}", "PagarOrden", "STOCK_INSUFICIENTE", usuarioId, ordenId, detalle.ProductId);
-                    return Result.Failure($"Su producto con id = {detalle.ProductId} no tiene suficiente stock");
+                    return Result.Failure(DomainErrors.Product.InssuficientStock(detalle.ProductId));
                 }
             }
 
@@ -262,7 +267,6 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
 
             return Result.Success();
         }
-
 
         //ADMIN
         public async Task<Result<List<OrdenDto>>> ObtenerTodasLasOrdenesAsync()
@@ -289,11 +293,12 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
 
             return Result<List<OrdenDto>>.Success(ordenesDto);
         }
+
         public async Task<Result<List<OrdenDto>>> ObtenerOrdenesPorUsuarioAdminAsync(int usuarioId)
         {
             if (usuarioId <= 0)
             {
-                return Result<List<OrdenDto>>.Failure("El usuarioId no debe ser menor o igual a 0");
+                return Result<List<OrdenDto>>.Failure(DomainErrors.User.InvalidId);
             }
 
             var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
@@ -301,7 +306,7 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
             if (usuario == null)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId}", "ObtenerOrdenesPorUsuarioAdmin", "USUARIO_NO_EXISTE", usuarioId);
-                return Result<List<OrdenDto>>.Failure($"Usuario con id = {usuarioId} no existe");
+                return Result<List<OrdenDto>>.Failure(DomainErrors.User.NotFound(usuarioId));
             }
 
             var ordenes = await _ordenRepository.ObtenerOrdenesPorUsuarioIdAsync(usuarioId);
@@ -326,11 +331,12 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
 
             return Result<List<OrdenDto>>.Success(ordenesDto);
         }
+
         public async Task<Result<OrdenDto>> ObtenerOrdenDetallesUsuarioAdminAsync(int ordenId)
         {
             if (ordenId <= 0)
             {
-                return Result<OrdenDto>.Failure("Su orden id no debe de ser menor o igual a 0");
+                return Result<OrdenDto>.Failure(DomainErrors.Order.InvalidId);
             }
 
             var orden = await _ordenRepository.ObtenerOrdenPorOrdenIdAsync(ordenId);
@@ -338,9 +344,8 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
             if (orden == null)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} OrderId={OrderId}", "ObtenerOrdenDetalleAdmin", "ORDEN_NO_EXISTE", ordenId);
-                return Result<OrdenDto>.Failure($"Orden no existe");
+                return Result<OrdenDto>.Failure(DomainErrors.Order.NotFound);
             }
-
 
             var ordenDto = new OrdenDto
             {
@@ -359,8 +364,6 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
                     UnitPrice = od.UnitPrice
                 }).ToList()
             };
-
-
 
             return Result<OrdenDto>.Success(ordenDto);
         }

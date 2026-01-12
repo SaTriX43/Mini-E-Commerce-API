@@ -7,7 +7,7 @@ namespace Mini_E_Commerce_API.Controllers.OrdenesControllerCarpeta
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AdminOrdenesController : ControllerBase
+    public class AdminOrdenesController : BaseApiController
     {
         private readonly IOrdenService _ordenService;
 
@@ -22,20 +22,7 @@ namespace Mini_E_Commerce_API.Controllers.OrdenesControllerCarpeta
         {
             var ordenes = await _ordenService.ObtenerTodasLasOrdenesAsync();
 
-            if (!ordenes.IsSuccess)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = ordenes.Error
-                });
-            }
-
-            return Ok(new
-            {
-                success = true,
-                value = ordenes.Value
-            });
+            return HandleResult(ordenes);
         }
 
         [Authorize(Roles = "Admin")]
@@ -44,20 +31,7 @@ namespace Mini_E_Commerce_API.Controllers.OrdenesControllerCarpeta
         {
             var ordenes = await _ordenService.ObtenerOrdenesPorUsuarioAdminAsync(usuarioId);
 
-            if (!ordenes.IsSuccess)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = ordenes.Error
-                });
-            }
-
-            return Ok(new
-            {
-                success = true,
-                value = ordenes.Value
-            });
+            return HandleResult(ordenes);
         }
 
 
@@ -67,20 +41,7 @@ namespace Mini_E_Commerce_API.Controllers.OrdenesControllerCarpeta
         {
             var ordenes = await _ordenService.ObtenerOrdenDetallesUsuarioAdminAsync(ordenId);
 
-            if (!ordenes.IsSuccess)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = ordenes.Error
-                });
-            }
-
-            return Ok(new
-            {
-                success = true,
-                value = ordenes.Value
-            });
+            return HandleResult(ordenes);
         }
     }
 }

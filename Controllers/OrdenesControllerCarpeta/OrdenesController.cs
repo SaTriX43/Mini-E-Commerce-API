@@ -8,7 +8,7 @@ namespace Mini_E_Commerce_API.Controllers.OrdenesControllerCarpeta
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class OrdenesController : ControllerBase
+    public class OrdenesController : BaseApiController
     {
         private readonly IOrdenService _ordenService;
 
@@ -17,160 +17,73 @@ namespace Mini_E_Commerce_API.Controllers.OrdenesControllerCarpeta
         }
 
         [Authorize]
-        [HttpPost("crear")]
+        [HttpPost]
         public async Task<IActionResult> CrearOrden()
         {
-            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if(!int.TryParse(usuarioIdClaim, out int usuarioId))
+            if(!TryGetUserId(out var usuarioId, out var error))
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = "Su usuario id debe de ser un numero"
-                });
+                return error;
             }
 
             var orden = await _ordenService.CrearOrdenAsync(usuarioId);
 
-            if(!orden.IsSuccess)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = orden.Error
-                });
-            }
-
-            return Ok(new
-            {
-                success = true,
-                value = orden.Value
-            });
+            return HandleResult(orden);
         }
 
         [Authorize]
         [HttpGet]
         public async Task<IActionResult> ObtenerOrdenes()
         {
-            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(usuarioIdClaim, out int usuarioId))
+            if (!TryGetUserId(out var usuarioId, out var error))
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = "Su usuario id debe de ser un numero"
-                });
+                return error;
             }
 
             var ordenes = await _ordenService.ObtenerOrdenesUsuarioAsync(usuarioId);
 
-            if (!ordenes.IsSuccess)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = ordenes.Error
-                });
-            }
-
-            return Ok(new
-            {
-                success = true,
-                value = ordenes.Value
-            });
+            return HandleResult(ordenes);
         }
 
         [Authorize]
         [HttpGet("{ordenId}")]
         public async Task<IActionResult> ObtenerOrdenDetallesPorId(int ordenId)
         {
-            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(usuarioIdClaim, out int usuarioId))
+            if (!TryGetUserId(out var usuarioId, out var error))
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = "Su usuario id debe de ser un numero"
-                });
+                return error;
             }
 
             var ordenDetalles = await _ordenService.ObtenerOrdenDetallesUsuarioAsync(ordenId,usuarioId);
 
-            if (!ordenDetalles.IsSuccess)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = ordenDetalles.Error
-                });
-            }
-
-            return Ok(new
-            {
-                success = true,
-                value = ordenDetalles.Value
-            });
+            return HandleResult(ordenDetalles);
         }
 
         [Authorize]
         [HttpPost("cancelar/{ordenId}")]
         public async Task<IActionResult> CancelarOrden(int ordenId)
         {
-            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(usuarioIdClaim, out int usuarioId))
+            if (!TryGetUserId(out var usuarioId, out var error))
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = "Su usuario id debe de ser un numero"
-                });
+                return error;
             }
 
             var resultado = await _ordenService.CancelarOrdenAsync(ordenId, usuarioId);
 
-            if (!resultado.IsSuccess)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = resultado.Error
-                });
-            }
-
-            return NoContent();
+            return HandleResult(resultado);
         }
 
         [Authorize]
         [HttpPost("pagar/{ordenId}")]
         public async Task<IActionResult> PagarOrden(int ordenId)
         {
-            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(usuarioIdClaim, out int usuarioId))
+            if (!TryGetUserId(out var usuarioId, out var error))
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = "Su usuario id debe de ser un numero"
-                });
+                return error;
             }
 
             var resultado = await _ordenService.PagarOrdenAsync(ordenId, usuarioId);
 
-            if (!resultado.IsSuccess)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = resultado.Error
-                });
-            }
-
-            return NoContent();
+            return HandleResult(resultado);
         }
     }
 }

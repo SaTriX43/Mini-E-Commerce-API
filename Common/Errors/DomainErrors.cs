@@ -14,6 +14,9 @@ namespace Mini_E_Commerce_API.Common.Errors
         {
             public static Error NotFound(int usuarioId) =>
                 new("User.NotFound", $"El usuario con id = {usuarioId} no existe.", ErrorType.NotFound);
+
+            public static readonly Error InvalidId =
+                new("User.InvalidId", "El usuarioId debe de ser mayor a 0", ErrorType.NotFound);
         }
 
         public static class Product
@@ -80,6 +83,27 @@ namespace Mini_E_Commerce_API.Common.Errors
 
             public static readonly Error InvalidQuantity =
                 new("CartItem.InvalidQuantity", "La cantidad no debe de ser menor o igual a 0", ErrorType.Validation);
+        }
+
+        public static class Order
+        {
+            public static readonly Error InvalidId =
+                new("Order.InvalidId", "Su orden id no debe de ser menor o igual a 0", ErrorType.Validation);
+
+            public static readonly Error NotFound =
+                new("Order.NotFound", "Orden no existe", ErrorType.NotFound);
+
+            public static readonly Error EmptyCart =
+                new("Order.EmptyCart", "No se pudo crear orden si no hay items en carrito", ErrorType.Validation);
+
+            public static readonly Error AlreadyCancelled =
+                new("Order.AlreadyCancelled", "La orden ya está cancelada", ErrorType.Conflict);
+
+            public static readonly Error InvalidStatusToCancel =
+                new("Order.InvalidStatusToCancel", "La orden no se puede cancelar", ErrorType.Conflict);
+
+            public static readonly Error InvalidStatusAction =
+                new("Order.InvalidStatusAction", "No se pudo realizar esta accion", ErrorType.Conflict);
         }
     }
 }
