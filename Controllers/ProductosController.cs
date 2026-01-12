@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Mini_E_Commerce_API.DTOs;
+using Mini_E_Commerce_API.Common.Responses;
 using Mini_E_Commerce_API.DTOs.ProductoDtoCarpeta;
 using Mini_E_Commerce_API.Models.Enums;
 using Mini_E_Commerce_API.Services.ProductoServiceCarpeta;
@@ -11,7 +11,7 @@ namespace Mini_E_Commerce_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ProductosController : ControllerBase
+    public class ProductosController : BaseApiController
     {
         private readonly IProductoService _productoService;
 
@@ -19,247 +19,105 @@ namespace Mini_E_Commerce_API.Controllers
             _productoService = productoService;
         }
 
-        [Authorize]
-        [HttpPost("crear")]
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
         public async Task<IActionResult> CrearProducto([FromBody] ProductoCrearDto productoCrearDto)
         {
-            if(!ModelState.IsValid)
+           if(!TryGetUserId(out var usuarioId, out var error))
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = ModelState
-                });
+                return error;
             }
 
-            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var rol = User.FindFirst(ClaimTypes.Role)?.Value;
+            var productoCreado = await _productoService.CrearProductoAsync(productoCrearDto,usuarioId);
 
-            if(!int.TryParse(usuarioIdClaim, out var usuarioId))
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = "Su usuarioId debe de ser un numero"
-                });
-            }
-
-            var productoCreado = await _productoService.CrearProductoAsync(productoCrearDto,usuarioId,rol);
-
-            if(!productoCreado.IsSuccess)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = productoCreado.Error
-                });
-            }
-
-            return Ok(new
-            {
-                success = true,
-                valor = productoCreado.Value
-            });
-        }
-
-        [ProducesResponseType(typeof(ApiResponseDto<ProductoDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponseDto<object>),StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ApiResponseDto<object>),StatusCodes.Status404NotFound)]
-        [Authorize]
-        [HttpGet("obtener/{productoId}")]
-        public async Task<IActionResult> ObtenerProductoPorId(int productoId)
-        {
-            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
-            {
-                return BadRequest(new ApiResponseDto<object>
-                {
-                    Success = false,
-                    Error = "Su usuarioId debe de ser un numero"
-                });
-            }
-
-            var producto = await _productoService.ObtenerProductoPorIdAsync(usuarioId, productoId);
-
-            if(!producto.IsSuccess)
-            {
-                if(producto.Error.Contains("no existe"))
-                {
-                    return NotFound(new ApiResponseDto<object>
-                    {
-                        Success = false,
-                        Error = producto.Error
-                    });
-                }
-                return BadRequest(new ApiResponseDto<object>
-                {
-                    Success = false,
-                    Error = producto.Error
-                });
-            }
-
-            return Ok(new ApiResponseDto<ProductoDto>
-            {
-                Success = true,
-                Value = producto.Value
-            });
-        }
-
-        [Authorize]
-        [HttpGet("obtener")]
-        public async Task<IActionResult> ObtenerProductos()
-        {
-            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = "Su usuarioId debe de ser un numero"
-                });
-            }
-
-            var productos = await _productoService.ObtenerProductosAsync(usuarioId);
-
-            if (!productos.IsSuccess)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = productos.Error
-                });
-            }
-
-            return Ok(new
-            {
-                success = true,
-                valor = productos.Value
-            });
+            return HandleResult(productoCreado);
         }
 
         [Authorize(Roles = "Admin")]
         [HttpPatch("incrementar-stock/{productoId}")]
         public async Task<IActionResult> IncrementarStockProducto([FromBody] StockDto stock, int productoId)
         {
-            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+            if (!TryGetUserId(out var usuarioId, out var error))
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = "Su usuarioId debe de ser un numero"
-                });
+                return error;
             }
 
             var resultadoIncrementar = await _productoService.OperacionStockProductoAsync(usuarioId, productoId,TipoDeMovimiento.Incrementar,stock.Cantidad);
 
-            if (!resultadoIncrementar.IsSuccess) {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = resultadoIncrementar.Error
-                });
-            }
-
-            return NoContent();
+            return HandleResult(resultadoIncrementar);
         }
-
 
         [Authorize(Roles = "Admin")]
         [HttpPatch("disminuir-stock/{productoId}")]
         public async Task<IActionResult> DisminuirStockProducto([FromBody] StockDto stock, int productoId)
         {
 
-
-            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+            if (!TryGetUserId(out var usuarioId, out var error))
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = "Su usuarioId debe de ser un numero"
-                });
+                return error;
             }
 
             var resultadoIncrementar = await _productoService.OperacionStockProductoAsync(usuarioId, productoId, TipoDeMovimiento.Disminuir, stock.Cantidad);
 
-            if (!resultadoIncrementar.IsSuccess)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = resultadoIncrementar.Error
-                });
-            }
-
-            return NoContent();
+            return HandleResult(resultadoIncrementar);
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpDelete("eliminar/{productoId}")]
+        [HttpDelete("{productoId}")]
         public async Task<IActionResult> EliminarProducto(int productoId)
         {
-            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+           if(!TryGetUserId(out var usuarioId, out var error))
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = "Su usuarioId debe de ser un numero"
-                });
+                return error;
             }
 
             var productoEliminado = await _productoService.EliminarProductoAsync(usuarioId, productoId);
 
-            if(!productoEliminado.IsSuccess)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = productoEliminado.Error
-                });
-            }
-
-            return NoContent();
+            return HandleResult(productoEliminado);
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPut("actualizar/{productoId}")]
+        [HttpPut("{productoId}")]
         public async Task<IActionResult> ActualizarProducto(int productoId, [FromBody] ProductoActualizarDto productoActualizarDto)
         {
-            if(!ModelState.IsValid)
+            if (!TryGetUserId(out var usuarioId, out var error))
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = ModelState
-                });
-            }
-
-            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = "Su usuarioId debe de ser un numero"
-                });
+                return error;
             }
 
             var productoActualizado = await _productoService.ActualizarProductoAsync(usuarioId, productoId,productoActualizarDto);
 
-            if (!productoActualizado.IsSuccess)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = productoActualizado.Error
-                });
-            }
-
-            return NoContent();
+            return HandleResult(productoActualizado);
         }
+
+
+
+
+
+        [ProducesResponseType(typeof(ApiResponseDto<ProductoDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponseDto<object>),StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponseDto<object>),StatusCodes.Status404NotFound)]
+        [Authorize]
+        [HttpGet("{productoId}")]
+        public async Task<IActionResult> ObtenerProductoPorId(int productoId)
+        {
+            var producto = await _productoService.ObtenerProductoPorIdAsync(productoId);
+
+            return HandleResult(producto);
+        }
+
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> ObtenerProductos()
+        {
+            var productos = await _productoService.ObtenerProductosAsync();
+
+            return HandleResult(productos);
+        }
+
+
+
+
+
     }
 }

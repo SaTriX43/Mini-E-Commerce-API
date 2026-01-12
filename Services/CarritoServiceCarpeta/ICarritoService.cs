@@ -1,5 +1,5 @@
-﻿using Mini_E_Commerce_API.DTOs.CarritoDtoCarpeta;
-using Mini_E_Commerce_API.Models;
+﻿using Mini_E_Commerce_API.Common.Results;
+using Mini_E_Commerce_API.DTOs.CarritoDtoCarpeta;
 
 namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
 {

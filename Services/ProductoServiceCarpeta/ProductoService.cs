@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using Mini_E_Commerce_API.Common.Results;
 using Mini_E_Commerce_API.DALs;
 using Mini_E_Commerce_API.DALs.CategoriaRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.ProductoRepositoryCarpeta;
@@ -7,6 +8,7 @@ using Mini_E_Commerce_API.DALs.UsuariorRepositoryCarpeta;
 using Mini_E_Commerce_API.DTOs.ProductoDtoCarpeta;
 using Mini_E_Commerce_API.Models;
 using Mini_E_Commerce_API.Models.Enums;
+using Mini_E_Commerce_API.Common.Errors;
 
 namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
 {
@@ -32,25 +34,20 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             _configuration = configuration;
         }
 
-        public async Task<Result<ProductoDto>> CrearProductoAsync(ProductoCrearDto productoCrearDto, int usuarioId, string rol)
+        public async Task<Result<ProductoDto>> CrearProductoAsync(ProductoCrearDto productoCrearDto, int usuarioId)
         {
             var usuarioExiste = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
 
             if (usuarioExiste == null)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId}", "CrearProducto", "USUARIO_NO_EXISTE", usuarioId);
-                return Result<ProductoDto>.Failure($"Su usuario con id = {usuarioId} no existe");
+                return Result<ProductoDto>.Failure(DomainErrors.User.NotFound(usuarioId));
             }
 
-            if (rol != RolUsuario.Admin.ToString())
-            {
-                _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId}", "CrearProducto", "SIN_PERMISOS", usuarioId);
-                return Result<ProductoDto>.Failure($"No puede realizar esta accion ya que no es un Administrador");
-            }
-
+            
             if (productoCrearDto.Stock <= 0)
             {
-                return Result<ProductoDto>.Failure($"No puede realizar esta accion ya que el stock debe de ser mayor a 0");
+                return Result<ProductoDto>.Failure(DomainErrors.Product.InvalidStock);
             }
 
             var categoriaExiste = await _categoriaRepository.ObtenerCategoriaPorIdAsync(productoCrearDto.CategoryId);
@@ -58,19 +55,19 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             if (categoriaExiste == null)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId}", "CrearProducto", "CATEGORIA_NO_EXISTE", usuarioId);
-                return Result<ProductoDto>.Failure($"Su categoria con id = {productoCrearDto.CategoryId} no existe");
+                return Result<ProductoDto>.Failure(DomainErrors.Category.NotFound(productoCrearDto.CategoryId));
             }
 
             if (!categoriaExiste.IsActive)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId}", "CrearProducto", "CATEGORIA_INACTIVA", usuarioId);
-                return Result<ProductoDto>.Failure($"Su categoria con id = {productoCrearDto.CategoryId} esta inactiva");
+                return Result<ProductoDto>.Failure(DomainErrors.Category.Inactive(productoCrearDto.CategoryId));
             }
 
 
             if (productoCrearDto.Price <= 0)
             {
-                return Result<ProductoDto>.Failure($"El precio no puede ser menor o igual a 0");
+                return Result<ProductoDto>.Failure(DomainErrors.Product.InvalidPrice);
             }
 
             var productoNombreNormzalizado = productoCrearDto.Name.Trim().ToLower();
@@ -80,9 +77,7 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             if (existe)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId}", "CrearProducto", "NOMBRE_DUPLICADO", usuarioId);
-                return Result<ProductoDto>.Failure(
-                    "No puede existir dos productos con el mismo nombre en la misma categoría"
-                );
+                return Result<ProductoDto>.Failure(DomainErrors.Product.Conflict);
             }
 
             var productoModel = new Producto
@@ -119,27 +114,19 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             return Result<ProductoDto>.Success(productoDto);
         }
 
-        public async Task<Result<ProductoDto>> ObtenerProductoPorIdAsync(int usuarioId, int productoId)
+        public async Task<Result<ProductoDto>> ObtenerProductoPorIdAsync(int productoId)
         {
             if (productoId <= 0)
             {
-                return Result<ProductoDto>.Failure($"Su productoId no puede ser menor o igual a 0");
-            }
-
-            var usuarioExise = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
-
-            if (usuarioExise == null)
-            {
-                _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} ProductId={ProductId}", "ObtenerProducto", "USUARIO_NO_EXISTE", usuarioId, productoId);
-                return Result<ProductoDto>.Failure($"Su usuario con id = {usuarioId} no existe");
+                return Result<ProductoDto>.Failure(DomainErrors.Product.InvalidId);
             }
 
             var productoExiste = await _productoRepository.ObtenerProductoPorIdAsync(productoId);
 
             if (productoExiste == null)
             {
-                _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} ProductId={ProductId}", "ObtenerProducto", "PRODUCTO_NO_EXISTE", usuarioId, productoId);
-                return Result<ProductoDto>.Failure($"Su producto con id = {productoId} no existe");
+                _logger.LogWarning("Accion={Action} Resultado={Resultado} ProductId={ProductId}", "ObtenerProducto", "PRODUCTO_NO_EXISTE", productoId);
+                return Result<ProductoDto>.Failure(DomainErrors.Product.NotFound(productoId));
             }
 
             var productoDto = new ProductoDto
@@ -157,23 +144,15 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
 
             return Result<ProductoDto>.Success(productoDto);
         }
-        public async Task<Result<List<ProductoDto>>> ObtenerProductosAsync(int usuarioId)
+        public async Task<Result<List<ProductoDto>>> ObtenerProductosAsync()
         {
-            var usuarioExise = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
-
-            if (usuarioExise == null)
-            {
-                _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId}", "ObtenerProductos", "USUARIO_NO_EXISTE", usuarioId);
-                return Result<List<ProductoDto>>.Failure($"Su usuario con id = {usuarioId} no existe");
-            }
-
             if (_memoryCache.TryGetValue(ProductosListCacheKey, out List<ProductoDto>? cached))
             {
-                _logger.LogInformation("Accion={Action} Resultado={Resultado} UserId={UserId}", "ObtenerProductos", "CACHE", usuarioId);
+                _logger.LogInformation("Accion={Action} Resultado={Resultado}", "ObtenerProductos", "CACHE");
                 return Result<List<ProductoDto>>.Success(cached!);
             }
 
-            _logger.LogInformation("Accion={Action} Resultado={Resultado} UserId={UserId}", "ObtenerProductos", "BD", usuarioId);
+            _logger.LogInformation("Accion={Action} Resultado={Resultado}", "ObtenerProductos", "BD");
 
             var productos = await _productoRepository.ObtenerProductosAsync();
 
@@ -206,12 +185,17 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
 
         public async Task<Result> OperacionStockProductoAsync(int usuarioId, int productoId, TipoDeMovimiento tipoDeMovimiento, int cantidad)
         {
+            if (productoId <= 0)
+            {
+                return Result.Failure(DomainErrors.Product.InvalidId);
+            }
+
             var usuarioEncontrado = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
 
             if (usuarioEncontrado == null)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} ProductId={ProductId}", "OperacionStock", "USUARIO_NO_EXISTE", usuarioId, productoId);
-                return Result.Failure($"Su usuario con id = {usuarioId} no existe");
+                return Result.Failure(DomainErrors.User.NotFound(usuarioId));
             }
 
             var productoEncontrado = await _productoRepository.ObtenerProductoPorIdAsync(productoId);
@@ -219,18 +203,18 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             if (productoEncontrado == null)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} ProductId={ProductId}", "OperacionStock", "PRODUCTO_NO_EXISTE", usuarioId, productoId);
-                return Result.Failure($"Su producto con id = {productoId} no existe");
+                return Result.Failure(DomainErrors.Product.NotFound(productoId));
             }
 
             if (cantidad <= 0)
             {
-                return Result.Failure("La cantidad debe de ser mayor a 0");
+                return Result.Failure(DomainErrors.Product.InvalidAmount);
             }
 
             if (!productoEncontrado.IsActive)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} ProductId={ProductId}", "OperacionStock", "PRODUCTO_INACTIVO", usuarioId, productoId);
-                return Result.Failure($"Su producto con id = {productoId} esta incativo");
+                return Result.Failure(DomainErrors.Product.Inactive(productoId));
             }
 
             if (tipoDeMovimiento == TipoDeMovimiento.Incrementar)
@@ -242,7 +226,7 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
                 if (productoEncontrado.Stock < cantidad)
                 {
                     _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} ProductId={ProductId}", "OperacionStock", "STOCK_INSUFICIENTE", usuarioId, productoId);
-                    return Result.Failure($"Su producto con id = {productoId} no tiene stock suficiente");
+                    return Result.Failure(DomainErrors.Product.InssuficientStock(productoId));
                 }
                 productoEncontrado.Stock -= cantidad;
             }
@@ -257,7 +241,7 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
         {
             if (productoId <= 0)
             {
-                return Result.Failure($"Su productoId no puede ser menor o igual a 0");
+                return Result.Failure(DomainErrors.Product.InvalidId);
             }
 
             var usuarioEncontrado = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
@@ -265,7 +249,7 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             if (usuarioEncontrado == null)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} ProductId={ProductId}", "EliminarProducto", "USUARIO_NO_EXISTE", usuarioId, productoId);
-                return Result.Failure($"Su usuario con id = {usuarioId} no existe");
+                return Result.Failure(DomainErrors.User.NotFound(usuarioId));
             }
 
             var productoEncontrado = await _productoRepository.ObtenerProductoPorIdAsync(productoId);
@@ -273,13 +257,13 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             if (productoEncontrado == null)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} ProductId={ProductId}", "EliminarProducto", "PRODUCTO_NO_EXISTE", usuarioId, productoId);
-                return Result.Failure($"Su producto con id = {productoId} no existe");
+                return Result.Failure(DomainErrors.Product.NotFound(productoId));
             }
 
             if (productoEncontrado.IsActive == false)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} ProductId={ProductId}", "EliminarProducto", "YA_ELIMINADO", usuarioId, productoId);
-                return Result.Failure($"Su producto con id = {productoId} ya fue eliminado");
+                return Result.Failure(DomainErrors.Product.Inactive(productoId));
             }
 
 
@@ -295,12 +279,12 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
         {
             if (productoId <= 0)
             {
-                return Result.Failure($"Su productoId no debe de ser menor o igual a 0");
+                return Result.Failure(DomainErrors.Product.InvalidId);
             }
 
             if (productoActualizarDto.Price <= 0)
             {
-                return Result.Failure("El precio del producto no puede ser menor o igual a 0");
+                return Result.Failure(DomainErrors.Product.InvalidPrice);
             }
 
             var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
@@ -308,7 +292,7 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             if (usuario == null)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} ProductId={ProductId}", "ActualizarProducto", "USUARIO_NO_EXISTE", usuarioId, productoId);
-                return Result.Failure($"Su usuario con id = {usuarioId} no existe");
+                return Result.Failure(DomainErrors.User.NotFound(usuarioId));
             }
 
             var producto = await _productoRepository.ObtenerProductoPorIdAsync(productoId);
@@ -316,13 +300,13 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             if (producto == null)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} ProductId={ProductId}", "ActualizarProducto", "PRODUCTO_NO_EXISTE", usuarioId, productoId);
-                return Result.Failure($"Su producto con id = {productoId} no existe");
+                return Result.Failure(DomainErrors.Product.NotFound(productoId));
             }
 
             if (!producto.IsActive)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} ProductId={ProductId}", "ActualizarProducto", "PRODUCTO_INACTIVO", usuarioId, productoId);
-                return Result.Failure($"Su producto con id = {productoId} esta desactivado");
+                return Result.Failure(DomainErrors.Product.Inactive(productoId));
             }
 
             var categoriaEncontrada = await _categoriaRepository.ObtenerCategoriaPorIdAsync(productoActualizarDto.CategoryId);
@@ -330,13 +314,13 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             if (categoriaEncontrada == null)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} ProductId={ProductId}", "ActualizarProducto", "CATEGORIA_NO_EXISTE", usuarioId, productoId);
-                return Result.Failure($"Su categoria con id = {productoActualizarDto.CategoryId} no existe");
+                return Result.Failure(DomainErrors.Category.NotFound(productoActualizarDto.CategoryId));
             }
 
             if (!categoriaEncontrada.IsActive)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} ProductId={ProductId}", "ActualizarProducto", "CATEGORIA_INACTIVA", usuarioId, productoId);
-                return Result.Failure($"Su categoria con id = {productoActualizarDto.CategoryId} esta desactivado");
+                return Result.Failure(DomainErrors.Category.Inactive(productoActualizarDto.CategoryId));
             }
 
             var productoNombreNormalizado = productoActualizarDto.Name.Trim().ToLower();
@@ -345,7 +329,7 @@ namespace Mini_E_Commerce_API.Services.ProductoServiceCarpeta
             if (existe)
             {
                 _logger.LogWarning("Accion={Action} Resultado={Resultado} UserId={UserId} ProductId={ProductId}", "ActualizarProducto", "NOMBRE_DUPLICADO", usuarioId, productoId);
-                return Result.Failure("No puede existir dos productos con nombres igualas en la misma categoria");
+                return Result.Failure(DomainErrors.Product.Conflict);
             }
 
             producto.Name = productoNombreNormalizado;

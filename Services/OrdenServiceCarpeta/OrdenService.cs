@@ -1,4 +1,5 @@
-﻿using Mini_E_Commerce_API.DALs;
+﻿using Mini_E_Commerce_API.Common.Results;
+using Mini_E_Commerce_API.DALs;
 using Mini_E_Commerce_API.DALs.CarritoRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.OrdenRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.ProductoRepositoryCarpeta;
@@ -68,7 +69,7 @@ namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
 
             var ordenModel = new Orden
             {
-                Status = Models.Enums.StatusOrden.Pending,
+                Status = StatusOrden.Pending,
                 CreatedAt = DateTime.UtcNow,
                 TotalAmount = montoTotal,
                 UserId = usuarioId,

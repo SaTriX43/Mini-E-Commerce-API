@@ -1,5 +1,5 @@
-﻿using Mini_E_Commerce_API.DTOs.OrdenDtoCarpeta;
-using Mini_E_Commerce_API.Models;
+﻿using Mini_E_Commerce_API.Common.Results;
+using Mini_E_Commerce_API.DTOs.OrdenDtoCarpeta;
 
 namespace Mini_E_Commerce_API.Services.OrdenServiceCarpeta
 {
