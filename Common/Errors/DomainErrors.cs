@@ -60,5 +60,26 @@ namespace Mini_E_Commerce_API.Common.Errors
             public static Error AlreadyInactive(int id) =>
                 new("Category.AlreadyInactive", $"La categoria con id={id} ya se encuentra desactivada.", ErrorType.Conflict);
         }
+
+        public static class Cart
+        {
+            public static readonly Error NotFound =
+                new("Cart.NotFound", "Carrito no existe", ErrorType.NotFound);
+        }
+
+        public static class CartItem
+        {
+            public static readonly Error InvalidId =
+                new("CartItem.InvalidId", "El id de carritoItem no puede ser menor o igual a 0", ErrorType.Validation);
+
+            public static readonly Error NotFound =
+                new("CartItem.NotFound", "El item no existe", ErrorType.NotFound);
+
+            public static readonly Error NotOwned =
+                new("CartItem.NotOwned", "No tiene permiso para eliminar este item", ErrorType.Forbidden);
+
+            public static readonly Error InvalidQuantity =
+                new("CartItem.InvalidQuantity", "La cantidad no debe de ser menor o igual a 0", ErrorType.Validation);
+        }
     }
 }

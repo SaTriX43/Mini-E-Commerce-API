@@ -1,4 +1,5 @@
-﻿using Mini_E_Commerce_API.Common.Results;
+﻿using Mini_E_Commerce_API.Common.Errors;
+using Mini_E_Commerce_API.Common.Results;
 using Mini_E_Commerce_API.DALs;
 using Mini_E_Commerce_API.DALs.CarritoRepositoryCarpeta;
 using Mini_E_Commerce_API.DALs.ProductoRepositoryCarpeta;
@@ -16,7 +17,13 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
         private readonly IUnidadDeTrabajo _unidadDeTrabajo;
         private readonly ILogger<CarritoService> _logger;
 
-        public CarritoService(ICarritoRepository carritoRepository, IUsuarioRepository usuarioRepository, IProductoRepository productoRepository, IUnidadDeTrabajo unidadDeTrabajo,ILogger<CarritoService> logger) { 
+        public CarritoService(
+            ICarritoRepository carritoRepository,
+            IUsuarioRepository usuarioRepository,
+            IProductoRepository productoRepository,
+            IUnidadDeTrabajo unidadDeTrabajo,
+            ILogger<CarritoService> logger)
+        {
             _carritoRepository = carritoRepository;
             _usuarioRepository = usuarioRepository;
             _productoRepository = productoRepository;
@@ -28,14 +35,14 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
         {
             var usuarioExiste = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
 
-            if(usuarioExiste == null)
+            if (usuarioExiste == null)
             {
-                return Result<CarritoDto>.Failure($"Su usuario con id = {usuarioId} no existe");
+                return Result<CarritoDto>.Failure(DomainErrors.User.NotFound(usuarioId));
             }
 
             var carrito = await _carritoRepository.ObtenerCarritoPorUsuarioIdAsync(usuarioId);
 
-            if(carrito == null)
+            if (carrito == null)
             {
                 var carritoModel = new Carrito
                 {
@@ -74,16 +81,17 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
 
             return Result<CarritoDto>.Success(carritoDto);
         }
+
         public async Task<Result> AgregarCarritoItemAsync(CarritoItemAgregarDto itemAgregarDto, int usuarioId)
         {
-            if(itemAgregarDto.Quantity <= 0)
+            if (itemAgregarDto.Quantity <= 0)
             {
-                return Result.Failure("La cantidad no debe de ser menor o igual a 0");
+                return Result.Failure(DomainErrors.CartItem.InvalidQuantity);
             }
 
             var ctx = await ObtenerContextoCarritoAsync(usuarioId, itemAgregarDto.ProductId);
 
-            if(!ctx.IsSuccess)
+            if (!ctx.IsSuccess)
             {
                 return Result.Failure(ctx.Error);
             }
@@ -92,48 +100,54 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
             var producto = ctx.Value.Producto;
             var carrito = ctx.Value.Carrito;
 
-            if(item == null && itemAgregarDto.Quantity > producto.Stock)
+            if (item == null && itemAgregarDto.Quantity > producto.Stock)
             {
                 _logger.LogWarning(
                    "User {UserId} intentó agregar producto {ProductId} quantity {Quantity} pero stock={Stock}",
                    usuarioId, producto.Id, itemAgregarDto.Quantity, producto.Stock
                 );
-                return Result.Failure($"Su producto con id {itemAgregarDto.ProductId} no tiene suficiente stock");
+
+                return Result.Failure(DomainErrors.Product.InssuficientStock(itemAgregarDto.ProductId));
             }
 
             if (item != null)
             {
-                if(item.Quatity + itemAgregarDto.Quantity > producto.Stock)
+                if (item.Quatity + itemAgregarDto.Quantity > producto.Stock)
                 {
-                    return Result.Failure($"Su producto con id {itemAgregarDto.ProductId} no tiene suficiente stock");
+                    return Result.Failure(DomainErrors.Product.InssuficientStock(itemAgregarDto.ProductId));
                 }
+
                 item.Quatity += itemAgregarDto.Quantity;
-            }else
+            }
+            else
             {
                 var carritoItemModel = new CarritoItem
                 {
                     CartId = carrito.Id,
                     ProductId = producto.Id,
-                    Quatity = itemAgregarDto.Quantity, 
+                    Quatity = itemAgregarDto.Quantity,
                 };
 
-                _carritoRepository.AgregarCarritoItem(carritoItemModel); 
+                _carritoRepository.AgregarCarritoItem(carritoItemModel);
             }
 
             carrito.UpdatedAt = DateTime.UtcNow;
 
             await _unidadDeTrabajo.GuardarCambiosAsync();
+
             _logger.LogInformation(
                "User {UserId} agregó producto {ProductId} quantity {Quantity} al carrito {CartId}",
                usuarioId, producto.Id, itemAgregarDto.Quantity, carrito.Id
             );
+
             return Result.Success();
         }
+
         public async Task<Result> ActualizarCantidadCarritoItemAsync(CarritoItemAgregarDto itemAgregarDto, int usuarioId)
         {
             if (itemAgregarDto.Quantity <= 0)
             {
-                return Result.Failure("La cantidad no debe de ser menor o igual a 0");
+                return Result.Failure(DomainErrors.CartItem.InvalidQuantity);
             }
 
             var ctx = await ObtenerContextoCarritoAsync(usuarioId, itemAgregarDto.ProductId);
@@ -149,13 +163,16 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
 
             if (item == null)
             {
-                return Result.Failure($"Su item no existe en el carrito");
+                return Result.Failure(DomainErrors.CartItem.NotFound);
             }
-            
+
             if (itemAgregarDto.Quantity > producto.Stock)
             {
-                _logger.LogWarning("usuario con id = {UserId} fallo al actualizar cantidad del item = {ProductId} ya que puso mas del stock actual",usuarioId,producto.Id);
-                return Result.Failure($"Su producto con id {itemAgregarDto.ProductId} no tiene suficiente stock");
+                _logger.LogWarning(
+                    "usuario con id = {UserId} fallo al actualizar cantidad del item = {ProductId} ya que puso mas del stock actual",
+                    usuarioId, producto.Id);
+
+                return Result.Failure(DomainErrors.Product.InssuficientStock(itemAgregarDto.ProductId));
             }
 
             item.Quatity = itemAgregarDto.Quantity;
@@ -163,78 +180,90 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
             carrito.UpdatedAt = DateTime.UtcNow;
 
             await _unidadDeTrabajo.GuardarCambiosAsync();
-            _logger.LogInformation("usuario con id = {UserId} actualizó cantidad del item = {ProductId}",usuarioId,producto.Id);
+
+            _logger.LogInformation(
+                "usuario con id = {UserId} actualizó cantidad del item = {ProductId}",
+                usuarioId, producto.Id);
+
             return Result.Success();
         }
+
         public async Task<Result> EliminarCarritoItemAsync(int carritoItemId, int usuarioId)
         {
-            if(carritoItemId <= 0)
+            if (carritoItemId <= 0)
             {
-                return Result.Failure("El id de carritoItem no puede ser menor o igual a 0");
-            }
-
-            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
-
-            if(usuario == null)
-            {
-                return Result.Failure($"Usuario con id = {usuarioId} no existe");
-            }
-            
-            var carritoItem = await _carritoRepository.ObtenerCarritoItemPorIdAsync(carritoItemId);
-
-            if (carritoItem == null)
-            {
-                return Result.Failure("El item no existe");
-            }
-
-            if (carritoItem.Carrito.UserId != usuarioId) {
-                _logger.LogWarning("Usuario con id = {UserId} intento eliminar un item que no es suyo", usuarioId);
-                return Result.Failure("No tiene permiso para eliminar este item");
-            }
-
-
-            _carritoRepository.EliminarItemCarrito(carritoItem);
-            carritoItem.Carrito.UpdatedAt = DateTime.UtcNow;
-            await _unidadDeTrabajo.GuardarCambiosAsync();
-            _logger.LogInformation("User {UserId} eliminó carritoItem {CarritoItemId}", usuarioId, carritoItemId);
-            return Result.Success();
-        }
-        public async Task<Result> VaciarCarritoAsync(int usuarioId)
-        {
-            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
-
-            if(usuario == null)
-            {
-                return Result.Failure($"Su usuario con id = {usuarioId} no existe");
-            }
-
-            var carrito = await _carritoRepository.ObtenerCarritoPorUsuarioIdAsync(usuarioId);
-
-            if(carrito == null)
-            {
-                return Result.Failure("Carrito no existe");
-            }
-
-            await _carritoRepository.VaciarCarritoItems(carrito.Id);
-            carrito.UpdatedAt = DateTime.UtcNow;
-            await _unidadDeTrabajo.GuardarCambiosAsync();
-            _logger.LogInformation("usuario con id {UserId} vació el carrito", usuarioId);
-            return Result.Success();
-        }
-
-
-        private async Task<Result<ContextoCarritoDto>> ObtenerContextoCarritoAsync(int usuarioId, int productoId)
-        {
-            if (productoId <= 0)
-            {
-                return Result<ContextoCarritoDto>.Failure("El productoId no debe de ser menor o igual a 0");
+                return Result.Failure(DomainErrors.CartItem.InvalidId);
             }
 
             var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
 
             if (usuario == null)
             {
-                return Result<ContextoCarritoDto>.Failure($"Su usuario con id {usuarioId} no existe");
+                return Result.Failure(DomainErrors.User.NotFound(usuarioId));
+            }
+
+            var carritoItem = await _carritoRepository.ObtenerCarritoItemPorIdAsync(carritoItemId);
+
+            if (carritoItem == null)
+            {
+                return Result.Failure(DomainErrors.CartItem.NotFound);
+            }
+
+            if (carritoItem.Carrito.UserId != usuarioId)
+            {
+                _logger.LogWarning("Usuario con id = {UserId} intento eliminar un item que no es suyo", usuarioId);
+
+                return Result.Failure(DomainErrors.CartItem.NotOwned);
+            }
+
+            _carritoRepository.EliminarItemCarrito(carritoItem);
+            carritoItem.Carrito.UpdatedAt = DateTime.UtcNow;
+
+            await _unidadDeTrabajo.GuardarCambiosAsync();
+
+            _logger.LogInformation("User {UserId} eliminó carritoItem {CarritoItemId}", usuarioId, carritoItemId);
+
+            return Result.Success();
+        }
+
+        public async Task<Result> VaciarCarritoAsync(int usuarioId)
+        {
+            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
+
+            if (usuario == null)
+            {
+                return Result.Failure(DomainErrors.User.NotFound(usuarioId));
+            }
+
+            var carrito = await _carritoRepository.ObtenerCarritoPorUsuarioIdAsync(usuarioId);
+
+            if (carrito == null)
+            {
+                return Result.Failure(DomainErrors.Cart.NotFound);
+            }
+
+            await _carritoRepository.VaciarCarritoItems(carrito.Id);
+            carrito.UpdatedAt = DateTime.UtcNow;
+
+            await _unidadDeTrabajo.GuardarCambiosAsync();
+
+            _logger.LogInformation("usuario con id {UserId} vació el carrito", usuarioId);
+
+            return Result.Success();
+        }
+
+        private async Task<Result<ContextoCarritoDto>> ObtenerContextoCarritoAsync(int usuarioId, int productoId)
+        {
+            if (productoId <= 0)
+            {
+                return Result<ContextoCarritoDto>.Failure(DomainErrors.Product.InvalidId);
+            }
+
+            var usuario = await _usuarioRepository.ObtenerUsuarioPorIdAsync(usuarioId);
+
+            if (usuario == null)
+            {
+                return Result<ContextoCarritoDto>.Failure(DomainErrors.User.NotFound(usuarioId));
             }
 
             var carrito = await _carritoRepository.ObtenerCarritoPorUsuarioIdAsync(usuarioId);
@@ -246,6 +275,7 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
                     UserId = usuarioId,
                     CreatedAt = DateTime.UtcNow,
                 };
+
                 carrito = _carritoRepository.CrearCarrito(carritoModel);
             }
 
@@ -253,12 +283,12 @@ namespace Mini_E_Commerce_API.Services.CarritoServiceCarpeta
 
             if (producto == null)
             {
-                return Result<ContextoCarritoDto>.Failure($"Su producto con id {productoId} no existe");
+                return Result<ContextoCarritoDto>.Failure(DomainErrors.Product.NotFound(productoId));
             }
 
             if (!producto.IsActive)
             {
-                return Result<ContextoCarritoDto>.Failure($"Su producto con id {productoId} esta inactivo");
+                return Result<ContextoCarritoDto>.Failure(DomainErrors.Product.Inactive(productoId));
             }
 
             var carritoItem = await _carritoRepository.ObtenerCarritoItemAsync(carrito.Id, producto.Id);
