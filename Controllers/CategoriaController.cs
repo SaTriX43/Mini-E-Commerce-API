@@ -9,7 +9,7 @@ namespace Mini_E_Commerce_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class CategoriaController : ControllerBase
+    public class CategoriaController : BaseApiController
     {
         private readonly ICategoriaService _categoriaService;
 
@@ -18,125 +18,64 @@ namespace Mini_E_Commerce_API.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPost("crear")]
+        [HttpPost]
         public async Task<IActionResult> CrearCategoria([FromBody] CategoriaCrearDto categoriaCrearDto)
         {
-            if (!ModelState.IsValid) { 
-                return BadRequest(new
-                {
-                    success = false,
-                    error = ModelState
-                });
-            }
-
-            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(usuarioIdClaim, out var usuarioId)) {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = "El id de su usuario debe ser un numero"
-                });
+           if(!TryGetUserId(out var usuarioId, out var error))
+            {
+                return error;
             }
 
             var categoria = await _categoriaService.CrearCategoriaAsync(categoriaCrearDto, usuarioId);
 
-            if(!categoria.IsSuccess)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = categoria.Error
-                });
-            }
-
-            return Ok(categoria.Value);
+            return HandleResult(categoria);
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpPut("actualizar/{categoriaId}")]
+        [HttpPut("{categoriaId}")]
         public async Task<IActionResult> ActualizarCategoria(
             int categoriaId,
             [FromBody] CategoriaCrearDto dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
 
-            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+            if (!TryGetUserId(out var usuarioId, out var error))
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = "El usuarioId no es válido"
-                });
+                return error;
             }
 
             var result = await _categoriaService
                 .ActualizarCategoriaAsync(dto, categoriaId, usuarioId);
 
-            if (!result.IsSuccess)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = result.Error
-                });
-            }
-
-            return NoContent();
+            return HandleResult(result);
         }
 
         [Authorize(Roles = "Admin")]
-        [HttpDelete("desactivar/{categoriaId}")]
+        [HttpDelete("{categoriaId}")]
         public async Task<IActionResult> DesactivarCategoria(int categoriaId)
         {
-            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+            if (!TryGetUserId(out var usuarioId, out var error))
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = "El usuarioId no es válido"
-                });
+                return error;
             }
 
             var result = await _categoriaService
                 .DesactivarCategoriaAsync(usuarioId, categoriaId);
 
-            if (!result.IsSuccess)
-            {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = result.Error
-                });
-            }
-
-            return NoContent();
+            return HandleResult(result);
         }
 
         [Authorize]
         [HttpGet]
         public async Task<IActionResult> ObtenerCategorias()
         {
-            var usuarioIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+            if (!TryGetUserId(out var usuarioId, out var error))
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    error = "El usuarioId no es válido"
-                });
+                return error;
             }
 
             var result = await _categoriaService.ObtenerCategoriasAsync(usuarioId);
 
-            if (!result.IsSuccess)
-                return BadRequest(result.Error);
-
-            return Ok(result.Value);
+            return HandleResult(result);
         }
     }
 }
