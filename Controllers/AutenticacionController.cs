@@ -7,7 +7,7 @@ namespace Mini_E_Commerce_API.Controllers
 {
     [ApiController]
     [Route("api/autenticacion")]
-    public class AutenticacionController : ControllerBase
+    public class AutenticacionController : BaseApiController
     {
         private readonly IAutenticacionService _autenticacionService;
 
@@ -19,53 +19,35 @@ namespace Mini_E_Commerce_API.Controllers
         [HttpPost("registro")]
         public async Task<IActionResult> Registrar(RegistroRequestDto dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
+           
             var result = await _autenticacionService.RegistrarAsync(dto);
 
-            if (!result.IsSuccess)
-                return BadRequest(result.Error);
-
-            return Ok(result.Value);
+            return HandleResult(result);
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequestDto dto) 
         {
-            if(!ModelState.IsValid) return BadRequest(ModelState);
-
             var result = await _autenticacionService.LoginAsync(dto);
 
-            if (!result.IsSuccess)
-                return Unauthorized(result.Error);
-
-            return Ok(result.Value);
+            return HandleResult(result);
         }
 
         [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshToken(RefreshTokenRenovarDto dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var result = await _autenticacionService.RefreshToken(dto);
 
-            if (!result.IsSuccess)
-                return Unauthorized(result.Error);
-
-            return Ok(result.Value);
+            return HandleResult(result);
         }
 
         [HttpPost("logout")]
         public async Task<IActionResult> Logout(RefreshTokenRenovarDto dto)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
             var result = await _autenticacionService.Logout(dto);
 
-            if (!result.IsSuccess)
-                return Unauthorized(result.Error);
-
-            return NoContent();
+            return HandleResult(result);
         }
     }
 

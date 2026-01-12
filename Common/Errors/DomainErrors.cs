@@ -8,7 +8,32 @@ namespace Mini_E_Commerce_API.Common.Errors
         {
             public static readonly Error Forbidden =
                 new("Auth.Forbidden", "No tiene permisos para realizar esta acción.", ErrorType.Forbidden);
+
+            public static readonly Error InvalidCredentials =
+                new("Auth.InvalidCredentials", "Credenciales inválidas", ErrorType.Unauthorized);
+
+            public static readonly Error EmailAlreadyRegistered =
+                new("Auth.EmailAlreadyRegistered", "El email ya está registrado", ErrorType.Conflict);
         }
+
+        public static class RefreshToken
+        {
+            public static readonly Error NotFound =
+                new("RefreshToken.NotFound", "Su token no puede ser null", ErrorType.Unauthorized);
+
+            public static readonly Error Revoked =
+                new("RefreshToken.Revoked", "Su token fue revocado", ErrorType.Unauthorized);
+
+            public static readonly Error Expired =
+                new("RefreshToken.Expired", "Su token ya expiro", ErrorType.Unauthorized);
+
+            public static readonly Error Used =
+                new("RefreshToken.Used", "Su token ya fue usado", ErrorType.Unauthorized);
+
+            public static readonly Error UserMissing =
+                new("RefreshToken.UserMissing", "Su usuario debe de existir", ErrorType.Unexpected);
+        }
+
 
         public static class User
         {
