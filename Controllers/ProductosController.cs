@@ -90,10 +90,6 @@ namespace Mini_E_Commerce_API.Controllers
             return HandleResult(productoActualizado);
         }
 
-
-
-
-
         [ProducesResponseType(typeof(ApiResponseDto<ProductoDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponseDto<object>),StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponseDto<object>),StatusCodes.Status404NotFound)]
