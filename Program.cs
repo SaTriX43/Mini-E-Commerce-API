@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Mini_E_Commerce_API.DALs;
@@ -16,6 +17,7 @@ using Mini_E_Commerce_API.Services.CategoriaServiceCarpeta;
 using Mini_E_Commerce_API.Services.OrdenServiceCarpeta;
 using Mini_E_Commerce_API.Services.ProductoServiceCarpeta;
 using Serilog;
+using System.Reflection;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,6 +34,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
+    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+
+    c.IncludeXmlComments(xmlPath);
+
     c.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "Mini E-Commerce API",
